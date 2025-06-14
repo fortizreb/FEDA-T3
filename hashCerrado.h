@@ -1,6 +1,3 @@
-// Tabla hash con hashing cerrado (dirección abierta)
-// Permite insertar y buscar usuarios por clave
-
 #ifndef HASH_CERRADO_H
 #define HASH_CERRADO_H
 
@@ -18,7 +15,7 @@ public:
     void insertar(const Usuario& usuario);
     bool buscarPorId(long long id);
     bool buscarPorNombre(const string& nombreUsuario);
-    // Puedes agregar métodos para eliminar y manejar colisiones
+    
 };
 
-#endif // HASH_CERRADO_H
+#endif 
