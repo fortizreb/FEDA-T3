@@ -1,5 +1,5 @@
 #include "usuario.h"
-#include "lecturaData.h"
+#include "lectura_data.h"
 #include "arbol_binario_id.h"
 #include "arbol_binario_nombre.h"
 #include <iostream>
@@ -59,7 +59,7 @@ int main() {
         string linea_csv;
         auto inicio_id = chrono::high_resolution_clock::now(); //start chrono
         while (getline(archivo_csv, linea_csv)) {
-            vector<string> campos = parsear_csv(linea_csv); //esta función la traigo de lecturaData.cpp
+            vector<string> campos = parsear_csv(linea_csv); //esta función la traigo de lectura_data.cpp
             
             if (campos.size() < 10) continue;
             Usuario usuario;
@@ -101,7 +101,7 @@ int main() {
             string id_limpio = campos[0];
             id_limpio.erase(std::remove(id_limpio.begin(), id_limpio.end(), '"'), id_limpio.end());
             try { usuario.id = stoll(id_limpio); } catch (...) { usuario.id = 0; }
-            // ...parseo de campos igual que en lecturaData.cpp...
+            // ...parseo de campos igual que en lectura_data.cpp...
             if (!usuario.screen_name.empty()) {
                 nodos_validos_nombre++;
                 bst_nombre.insertar(usuario);
@@ -134,7 +134,8 @@ int main() {
              << " |" << endl;
         cout << "+-----+--------------+---------+-----------------+---------------------+" << endl;
 
-        
+        cout << "\nPrimeros 5 registros del BST por ID:" << endl;
+        bst_id.imprimir_primeros_n(5);
 
         // Menú de búsqueda en bucle
         while (true) {
@@ -199,9 +200,8 @@ int main() {
             }
         }
 
-        // Al final del main, imprimir los primeros 5 registros del BST por ID
-        cout << "\nPrimeros 5 registros del BST por ID:" << endl;
-        bst_id.imprimir_primeros_n(5);
+        
+        
     } else if (opcion == 2) {
         cout << "Trabajando con Tabla Hash" << endl;
         // Aquí irá la lógica para Hash
