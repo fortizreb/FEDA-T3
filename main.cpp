@@ -291,62 +291,62 @@ int main() {
         }
         cout << "+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
 
-        // Al final del main, imprimir los primeros 5 registros del BST por ID y por nombre en formato de grilla
-        cout << "\nPrimeros 5 registros del BST por ID (in-order):" << endl;
-        cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-        cout << "| id                  | nombre                   | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id            |" << endl;
-        cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-        int contador_id = 0;
-        std::function<void(nodo_arbol_id*)> imprimir_id;
-        imprimir_id = [&](nodo_arbol_id* nodo) {
-            if (!nodo || contador_id >= 5) return;
-            imprimir_id(nodo->izquierdo);
-            if (contador_id < 5) {
-                string avatar_corto = nodo->usuario.avatar.length() > 15 ? nodo->usuario.avatar.substr(0, 15) + "..." : nodo->usuario.avatar;
-                cout << "| " << setw(19) << left << nodo->usuario.id
-                     << " | " << setw(24) << left << nodo->usuario.screen_name
-                     << " | " << setw(17) << left << (nodo->usuario.tags.empty() ? "0" : to_string(nodo->usuario.tags.size()))
-                     << " | " << setw(19) << left << avatar_corto
-                     << " | " << setw(15) << left << nodo->usuario.followers_count
-                     << " | " << setw(15) << left << nodo->usuario.friends_count
-                     << " | " << setw(8) << left << nodo->usuario.lang
-                     << " | " << setw(15) << left << nodo->usuario.last_seen
-                     << " | " << setw(15) << left << nodo->usuario.tweet_id
-                     << " |" << endl;
-                contador_id++;
-            }
-            imprimir_id(nodo->derecho);
-        };
-        imprimir_id(bst_id.raiz);
-        cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        // --- OCULTADO: Grillas de los primeros 5 registros del BST por ID y por NOMBRE ---
+        // cout << "\nPrimeros 5 registros del BST por ID (in-order):" << endl;
+        // cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        // cout << "| id                  | nombre                   | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id            |" << endl;
+        // cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        // int contador_id = 0;
+        // std::function<void(nodo_arbol_id*)> imprimir_id;
+        // imprimir_id = [&](nodo_arbol_id* nodo) {
+        //     if (!nodo || contador_id >= 5) return;
+        //     imprimir_id(nodo->izquierdo);
+        //     if (contador_id < 5) {
+        //         string avatar_corto = nodo->usuario.avatar.length() > 15 ? nodo->usuario.avatar.substr(0, 15) + "..." : nodo->usuario.avatar;
+        //         cout << "| " << setw(19) << left << nodo->usuario.id
+        //              << " | " << setw(24) << left << nodo->usuario.screen_name
+        //              << " | " << setw(17) << left << (nodo->usuario.tags.empty() ? "0" : to_string(nodo->usuario.tags.size()))
+        //              << " | " << setw(19) << left << avatar_corto
+        //              << " | " << setw(15) << left << nodo->usuario.followers_count
+        //              << " | " << setw(15) << left << nodo->usuario.friends_count
+        //              << " | " << setw(8) << left << nodo->usuario.lang
+        //              << " | " << setw(15) << left << nodo->usuario.last_seen
+        //              << " | " << setw(15) << left << nodo->usuario.tweet_id
+        //              << " |" << endl;
+        //         contador_id++;
+        //     }
+        //     imprimir_id(nodo->derecho);
+        // };
+        // imprimir_id(bst_id.raiz);
+        // cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
 
-        cout << "\nPrimeros 5 registros del BST por NOMBRE (in-order):" << endl;
-        cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-        cout << "| nombre                   | id                  | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id            |" << endl;
-        cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-        int contador_nombre = 0;
-        std::function<void(nodo_arbol_nombre*)> imprimir_nombre;
-        imprimir_nombre = [&](nodo_arbol_nombre* nodo) {
-            if (!nodo || contador_nombre >= 5) return;
-            imprimir_nombre(nodo->izquierdo);
-            if (contador_nombre < 5) {
-                string avatar_corto_nombre = nodo->usuario.avatar.length() > 15 ? nodo->usuario.avatar.substr(0, 15) + "..." : nodo->usuario.avatar;
-                cout << "| " << setw(24) << left << nodo->usuario.screen_name
-                     << " | " << setw(19) << left << nodo->usuario.id
-                     << " | " << setw(17) << left << (nodo->usuario.tags.empty() ? "0" : to_string(nodo->usuario.tags.size()))
-                     << " | " << setw(19) << left << avatar_corto_nombre
-                     << " | " << setw(15) << left << nodo->usuario.followers_count
-                     << " | " << setw(15) << left << nodo->usuario.friends_count
-                     << " | " << setw(8) << left << nodo->usuario.lang
-                     << " | " << setw(15) << left << nodo->usuario.last_seen
-                     << " | " << setw(15) << left << nodo->usuario.tweet_id
-                     << " |" << endl;
-                contador_nombre++;
-            }
-            imprimir_nombre(nodo->derecho);
-        };
-        imprimir_nombre(bst_nombre.raiz);
-        cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        // cout << "\nPrimeros 5 registros del BST por NOMBRE (in-order):" << endl;
+        // cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        // cout << "| nombre                   | id                  | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id            |" << endl;
+        // cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        // int contador_nombre = 0;
+        // std::function<void(nodo_arbol_nombre*)> imprimir_nombre;
+        // imprimir_nombre = [&](nodo_arbol_nombre* nodo) {
+        //     if (!nodo || contador_nombre >= 5) return;
+        //     imprimir_nombre(nodo->izquierdo);
+        //     if (contador_nombre < 5) {
+        //         string avatar_corto_nombre = nodo->usuario.avatar.length() > 15 ? nodo->usuario.avatar.substr(0, 15) + "..." : nodo->usuario.avatar;
+        //         cout << "| " << setw(24) << left << nodo->usuario.screen_name
+        //              << " | " << setw(19) << left << nodo->usuario.id
+        //              << " | " << setw(17) << left << (nodo->usuario.tags.empty() ? "0" : to_string(nodo->usuario.tags.size()))
+        //              << " | " << setw(19) << left << avatar_corto_nombre
+        //              << " | " << setw(15) << left << nodo->usuario.followers_count
+        //              << " | " << setw(15) << left << nodo->usuario.friends_count
+        //              << " | " << setw(8) << left << nodo->usuario.lang
+        //              << " | " << setw(15) << left << nodo->usuario.last_seen
+        //              << " | " << setw(15) << left << nodo->usuario.tweet_id
+        //              << " |" << endl;
+        //         contador_nombre++;
+        //     }
+        //     imprimir_nombre(nodo->derecho);
+        // };
+        // imprimir_nombre(bst_nombre.raiz);
+        // cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
 
         // Menú de búsqueda en bucle
         while (true) {
@@ -360,6 +360,10 @@ int main() {
             cin >> opcion_busqueda;
             tuple<string, string, string, int, double> resultado_busqueda;
             bool hizo_busqueda = false;
+            // --- Variables auxiliares para la grilla de búsqueda ---
+            string target_str, campo_str;
+            double segundos = 0;
+            long long milis = 0, micros = 0, nanos = 0;
             if (opcion_busqueda == 1) {
                 long long id_buscar;
                 cout << "\nIngrese ID: ";
@@ -394,7 +398,14 @@ int main() {
                     cout << "| No encontrado                                                                                                                      |" << endl;
                 }
                 cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
-                cout << "Tiempo: " << duracion_busqueda_id.count() << " ns" << endl;
+                cout << "\nTIEMPO:";
+                // --- Guardar datos para la grilla ---
+                target_str = to_string(id_buscar);
+                campo_str = "ID";
+                segundos = (double)duracion_busqueda_id.count()/1e9;
+                milis = duracion_busqueda_id.count()/1000000;
+                micros = duracion_busqueda_id.count()/1000;
+                nanos = duracion_busqueda_id.count();
             } else if (opcion_busqueda == 2) {
                 string nombre_buscar;
                 cout << "\nIngrese NOMBRE: ";
@@ -431,22 +442,31 @@ int main() {
                 }
                 cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
                 cout << "Tiempo: " << duracion_busqueda_nombre.count() << " ns" << endl;
+                // --- Guardar datos para la grilla ---
+                target_str = nombre_buscar;
+                campo_str = "NOMBRE";
+                segundos = (double)duracion_busqueda_nombre.count()/1e9;
+                milis = duracion_busqueda_nombre.count()/1000000;
+                micros = duracion_busqueda_nombre.count()/1000;
+                nanos = duracion_busqueda_nombre.count();
             } else {
                 break;
             }
-            // Mostrar solo el resultado de la búsqueda actual
-            if (hizo_busqueda) {
-                cout << "\n+-----+--------------+---------+-----------------+---------------------+" << endl;
-                cout << "| ED  | Operación    | Target  | Nodos afectados | Tiempo (segundos)   |" << endl;
-                cout << "+-----+--------------+---------+-----------------+---------------------+" << endl;
-                cout << "| " << setw(3) << left << get<0>(resultado_busqueda)
-                     << " | " << setw(13) << left << get<1>(resultado_busqueda)
-                     << " | " << setw(7) << left << get<2>(resultado_busqueda)
-                     << " | " << setw(15) << left << get<3>(resultado_busqueda)
-                     << " | " << setw(19) << left << fixed << setprecision(6) << get<4>(resultado_busqueda)
-                     << " |" << endl;
-                cout << "+-----+--------------+---------+-----------------+---------------------+" << endl;
-            }
+
+            // --- NUEVA GRILLA DE RESULTADO DE BÚSQUEDA ---
+            cout << "\n+------+------------+---------------------+---------------------+------------+---------------+---------------+---------------+" << endl;
+            cout << "| ED   | Operación  | Target              | Campo              | Segundos   | Milisegundos  | Microsegundos | Nanosegundos  |" << endl;
+            cout << "+------+------------+---------------------+---------------------+------------+---------------+---------------+---------------+" << endl;
+            cout << "| " << setw(4) << left << "BST"
+                 << " | " << setw(10) << left << "búsqueda"
+                 << " | " << setw(19) << left << target_str
+                 << " | " << setw(19) << left << campo_str
+                 << " | " << setw(10) << left << fixed << setprecision(6) << segundos
+                 << " | " << setw(13) << left << milis
+                 << " | " << setw(13) << left << micros
+                 << " | " << setw(13) << left << nanos
+                 << " |" << endl;
+            cout << "+------+------------+---------------------+---------------------+------------+---------------+---------------+---------------+" << endl;
         }
 
         
