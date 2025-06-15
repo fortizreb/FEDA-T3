@@ -5,11 +5,10 @@
 #include <algorithm>
 using namespace std;
 
-// Copia aquí la implementación de tus funciones desde lecturaData.cpp si es necesario.
+
 
 vector<Usuario> leer_usuarios_desde_csv(const string& rutaArchivo) {
-    // Copia aquí la implementación original de leerUsuariosDesdeCsv si es necesario
-    // ...
+   
     return {};
 }
 

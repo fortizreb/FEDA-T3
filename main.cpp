@@ -9,7 +9,67 @@
 #include <algorithm>
 #include <vector>
 #include <tuple>
+#include <functional>
 using namespace std;
+
+// Funciones utilitarias para validar y asignar campos
+inline void asignar_si_valido(string& destino, const vector<string>& campos, size_t idx) {
+    if (campos.size() > idx && !campos[idx].empty() && campos[idx] != "\"\"" && campos[idx] != "null") {
+        destino = campos[idx];
+    } else {
+        destino = "";
+    }
+}
+inline void asignar_si_valido(int& destino, const vector<string>& campos, size_t idx) {
+    if (campos.size() > idx) {
+        try { destino = stoi(campos[idx]); } catch (...) { destino = 0; }
+    } else {
+        destino = 0;
+    }
+}
+inline void asignar_si_valido(long long& destino, const vector<string>& campos, size_t idx) {
+    if (campos.size() > idx) {
+        try { destino = stoll(campos[idx]); } catch (...) { destino = 0; }
+    } else {
+        destino = 0;
+    }
+}
+
+// Utilidad para limpiar comillas dobles y espacios
+inline string limpiar_campo(const string& s) {
+    string out = s;
+    out.erase(remove(out.begin(), out.end(), '"'), out.end());
+    out.erase(remove(out.begin(), out.end(), ' '), out.end());
+    return out;
+}
+// Parsear vector<string> desde campo CSV tipo [tag1,tag2,...]
+inline vector<string> parsear_tags(const string& campo) {
+    vector<string> tags;
+    string limpio = limpiar_campo(campo);
+    if (limpio.size() > 2 && limpio.front() == '[' && limpio.back() == ']') {
+        string inner = limpio.substr(1, limpio.size() - 2);
+        stringstream ss(inner);
+        string tag;
+        while (getline(ss, tag, ',')) {
+            if (!tag.empty()) tags.push_back(tag);
+        }
+    }
+    return tags;
+}
+// Parsear vector<long long> desde campo CSV tipo [1,2,3]
+inline vector<long long> parsear_friends(const string& campo) {
+    vector<long long> friends;
+    string limpio = limpiar_campo(campo);
+    if (limpio.size() > 2 && limpio.front() == '[' && limpio.back() == ']') {
+        string inner = limpio.substr(1, limpio.size() - 2);
+        stringstream ss(inner);
+        string num;
+        while (getline(ss, num, ',')) {
+            try { if (!num.empty()) friends.push_back(stoll(num)); } catch (...) {}
+        }
+    }
+    return friends;
+}
 
 int menu() {
     int opcion = 0;
@@ -31,9 +91,20 @@ int main() {
     if (opcion == 1) {
         cout << "Cargando datos en BST, espere un momento" << endl;
         // Vector para almacenar las filas de la grilla
-        vector<tuple<string, string, string, int, double>> grilla;
-        Arbol_Binario_Id bst_id;
-        Arbol_Binario_Nombre bst_nombre;
+        struct ResultadoInsercion {
+            string ed;
+            string operacion;
+            string target;
+            int nodos;
+            double segundos;
+            long long milisegundos;
+            long long microsegundos;
+            long long nanosegundos;
+        };
+        vector<ResultadoInsercion> grilla_id;
+        vector<ResultadoInsercion> grilla_nombre;
+        arbol_binario_id bst_id;
+        arbol_binario_nombre bst_nombre;
         ifstream archivo_csv("data.csv");
         if (!archivo_csv.is_open()) {
             cerr << "No se pudo abrir el archivo: data.csv" << endl;
@@ -55,87 +126,227 @@ int main() {
         getline(archivo_csv, tmp_linea); // Cabecera de nuevo ya que que comenzamos denuevo la lectura del set.
 
         /***************************** INSERTAR EN BST POR ID  ****************************/
+        // --- NUEVO LÍMITE DE 10,000 INSERCIONES PARA BST POR ID ---
+        archivo_csv.clear();
+        archivo_csv.seekg(0);
+        getline(archivo_csv, tmp_linea); // Cabecera
         int nodos_validos_id = 0;
-        string linea_csv;
-        auto inicio_id = chrono::high_resolution_clock::now(); //start chrono
+        vector<Usuario> buffer_usuarios_id;
+        buffer_usuarios_id.reserve(5000);
+        string linea_csv; // Declaración necesaria para los bucles de inserción
         while (getline(archivo_csv, linea_csv)) {
-            vector<string> campos = parsear_csv(linea_csv); //esta función la traigo de lectura_data.cpp
-            
+            // if (nodos_validos_id >= 10000) break; // <--- Comentado para permitir hasta 40000
+            vector<string> campos = parsear_csv(linea_csv);
             if (campos.size() < 10) continue;
             Usuario usuario;
-            
-            string id_limpio = campos[0];  //quitar commillas dobles de id.
-            id_limpio.erase(std::remove(id_limpio.begin(), id_limpio.end(), '"'), id_limpio.end());
-
-            // Limpiar comillas dobles del campo screen_name
-            string nombre_limpio = campos[1];
-            nombre_limpio.erase(std::remove(nombre_limpio.begin(), nombre_limpio.end(), '"'), nombre_limpio.end());
-            usuario.screen_name = nombre_limpio;
-            
-            try { usuario.id = stoll(id_limpio); } catch (...) { usuario.id = 0; }// Asignar el id_limpio
-            
+            // ID
+            string id_limpio = limpiar_campo(campos[0]);
+            asignar_si_valido(usuario.id, vector<string>{id_limpio}, 0);
+            // Nombre
+            usuario.screen_name = limpiar_campo(campos[1]);
+            // Tags
+            usuario.tags = parsear_tags(campos[2]);
+            // Avatar
+            usuario.avatar = limpiar_campo(campos[3]);
+            // Followers count
+            asignar_si_valido(usuario.followers_count, campos, 4);
+            // Friends count
+            asignar_si_valido(usuario.friends_count, campos, 5);
+            // Lang
+            usuario.lang = limpiar_campo(campos[6]);
+            // Last seen
+            asignar_si_valido(usuario.last_seen, campos, 7);
+            // Tweet id
+            string tweet_id_limpio = limpiar_campo(campos[8]);
+            asignar_si_valido(usuario.tweet_id, vector<string>{tweet_id_limpio}, 0);
+            // Friends
+            usuario.friends = parsear_friends(campos[9]);
             if (usuario.id > 0) {
-                nodos_validos_id++;
-                bst_id.insertar(usuario);
+                buffer_usuarios_id.push_back(usuario);
             }
+            if (buffer_usuarios_id.size() == 5000) {
+                auto inicio_bloque = chrono::high_resolution_clock::now();
+                for (const auto& u : buffer_usuarios_id) {
+                    // if (nodos_validos_id >= 10000) break; // <--- Comentado para permitir hasta 40000
+                    bst_id.insertar(u);
+                    nodos_validos_id++;
+                }
+                auto fin_bloque = chrono::high_resolution_clock::now();
+                auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin_bloque - inicio_bloque);
+                grilla_id.push_back({"BST", "inserción", "id", nodos_validos_id, duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+                buffer_usuarios_id.clear();
+            }
+            if (nodos_validos_id == 40000) break;
         }
-        auto fin_id = chrono::high_resolution_clock::now(); //stop chrono
-        chrono::duration<double> duracion_id = fin_id - inicio_id;
-        grilla.push_back({"BST", "inserción", "id", nodos_validos_id, duracion_id.count()});
+        // Si quedan usuarios en el buffer y no se llegó a 10,000 nodos
+        if (!buffer_usuarios_id.empty() && nodos_validos_id < 10000) {
+            auto inicio_bloque = chrono::high_resolution_clock::now();
+            for (const auto& u : buffer_usuarios_id) {
+                // if (nodos_validos_id >= 10000) break; // <--- Comentado para permitir hasta 40000
+                bst_id.insertar(u);
+                nodos_validos_id++;
+            }
+            auto fin_bloque = chrono::high_resolution_clock::now();
+            auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin_bloque - inicio_bloque);
+            grilla_id.push_back({"BST", "inserción", "id", nodos_validos_id, duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+        }
 
 
         /* RESET DATA SET  */
         archivo_csv.clear();
         archivo_csv.seekg(0);
         getline(archivo_csv, tmp_linea);
-
-        /************************** INSERTAR EN BST POR NOMBRE_USUARIO ****************************/
+        // --- NUEVO LÍMITE DE 10,000 INSERCIONES PARA BST POR NOMBRE ---
         int nodos_validos_nombre = 0;
-        auto inicio_nombre = chrono::high_resolution_clock::now(); //start chrono
+        vector<Usuario> buffer_usuarios_nombre;
+        buffer_usuarios_nombre.reserve(5000);
         while (getline(archivo_csv, linea_csv)) {
+            // if (nodos_validos_nombre >= 10000) break; // <--- Comentado para permitir hasta 40000
             vector<string> campos = parsear_csv(linea_csv);
             if (campos.size() < 10) continue;
             Usuario usuario;
-            usuario.screen_name = campos[1];
-            // Limpiar comillas dobles del campo ID
-            string id_limpio = campos[0];
-            id_limpio.erase(std::remove(id_limpio.begin(), id_limpio.end(), '"'), id_limpio.end());
-            try { usuario.id = stoll(id_limpio); } catch (...) { usuario.id = 0; }
-            // ...parseo de campos igual que en lectura_data.cpp...
+            // ID
+            string id_limpio = limpiar_campo(campos[0]);
+            asignar_si_valido(usuario.id, vector<string>{id_limpio}, 0);
+            // Nombre
+            usuario.screen_name = limpiar_campo(campos[1]);
+            // Tags
+            usuario.tags = parsear_tags(campos[2]);
+            // Avatar
+            usuario.avatar = limpiar_campo(campos[3]);
+            // Followers count
+            asignar_si_valido(usuario.followers_count, campos, 4);
+            // Friends count
+            asignar_si_valido(usuario.friends_count, campos, 5);
+            // Lang
+            usuario.lang = limpiar_campo(campos[6]);
+            // Last seen
+            asignar_si_valido(usuario.last_seen, campos, 7);
+            // Tweet id
+            string tweet_id_limpio = limpiar_campo(campos[8]);
+            asignar_si_valido(usuario.tweet_id, vector<string>{tweet_id_limpio}, 0);
+            // Friends
+            usuario.friends = parsear_friends(campos[9]);
             if (!usuario.screen_name.empty()) {
-                nodos_validos_nombre++;
-                bst_nombre.insertar(usuario);
+                buffer_usuarios_nombre.push_back(usuario);
             }
+            if (buffer_usuarios_nombre.size() == 5000) {
+                auto inicio_bloque = chrono::high_resolution_clock::now();
+                for (const auto& u : buffer_usuarios_nombre) {
+                    // if (nodos_validos_nombre >= 10000) break; // <--- Comentado para permitir hasta 40000
+                    bst_nombre.insertar(u);
+                    nodos_validos_nombre++;
+                }
+                auto fin_bloque = chrono::high_resolution_clock::now();
+                auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin_bloque - inicio_bloque);
+                grilla_nombre.push_back({"BST", "inserción", "nombre", nodos_validos_nombre, duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+                buffer_usuarios_nombre.clear();
+            }
+            if (nodos_validos_nombre == 40000) break;
         }
-        auto fin_nombre = chrono::high_resolution_clock::now(); //stop chrono
-        chrono::duration<double> duracion_nombre = fin_nombre - inicio_nombre;
+        if (!buffer_usuarios_nombre.empty()) {
+            auto inicio_bloque = chrono::high_resolution_clock::now();
+            for (const auto& u : buffer_usuarios_nombre) {
+                bst_nombre.insertar(u);
+                nodos_validos_nombre++;
+            }
+            auto fin_bloque = chrono::high_resolution_clock::now();
+            auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin_bloque - inicio_bloque);
+            grilla_nombre.push_back({"BST", "inserción", "nombre", nodos_validos_nombre, duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+        }
 
 
-        
-        cout << "\nINSERCIÓN:";
-        
-        grilla.push_back({"BST", "inserción", "nombre", nodos_validos_nombre, duracion_nombre.count()});
-
+        cout << "\nINSERCIÓN BST POR ID:";
         // Mostrar grilla inicial con formato actualizado
-        cout << "\n+-----+--------------+---------+-----------------+---------------------+" << endl;
-        cout << "| ED  | Operación    | Target  | Nodos afectados | Tiempo (segundos)   |" << endl;
-        cout << "+-----+--------------+---------+-----------------+---------------------+" << endl;
-        cout << "| " << setw(3) << left << "BST"
-             << " | " << setw(13) << left << "inserción"
-             << " | " << setw(7) << left << "id"
-             << " | " << setw(15) << left << nodos_validos_id
-             << " | " << setw(19) << left << fixed << setprecision(6) << duracion_id.count()
-             << " |" << endl;
-        cout << "| " << setw(3) << left << "BST"
-             << " | " << setw(13) << left << "inserción"
-             << " | " << setw(7) << left << "nombre"
-             << " | " << setw(15) << left << nodos_validos_nombre
-             << " | " << setw(19) << left << fixed << setprecision(6) << duracion_nombre.count()
-             << " |" << endl;
-        cout << "+-----+--------------+---------+-----------------+---------------------+" << endl;
+        cout << "\n+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
+        cout << "| ED   | Operación  | Target              | Nodos creados      | Segundos   | Milisegundos  | Microsegundos | Nanosegundos  |" << endl;
+        cout << "+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
+        for (const auto& r : grilla_id) {
+            cout << "| " << setw(4) << left << r.ed
+                 << " | " << setw(10) << left << r.operacion
+                 << " | " << setw(19) << left << r.target
+                 << " | " << setw(18) << left << r.nodos
+                 << " | " << setw(10) << left << fixed << setprecision(6) << r.segundos
+                 << " | " << setw(13) << left << r.milisegundos
+                 << " | " << setw(13) << left << r.microsegundos
+                 << " | " << setw(13) << left << r.nanosegundos
+                 << " |" << endl;
+        }
+        cout << "+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
 
-        cout << "\nPrimeros 5 registros del BST por ID:" << endl;
-        bst_id.imprimir_primeros_n(5);
+        cout << "\nINSERCIÓN BST POR NOMBRE:";
+        cout << "\n+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
+        cout << "| ED   | Operación  | Target              | Nodos creados      | Segundos   | Milisegundos  | Microsegundos | Nanosegundos  |" << endl;
+        cout << "+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
+        for (const auto& r : grilla_nombre) {
+            cout << "| " << setw(4) << left << r.ed
+                 << " | " << setw(10) << left << r.operacion
+                 << " | " << setw(19) << left << r.target
+                 << " | " << setw(18) << left << r.nodos
+                 << " | " << setw(10) << left << fixed << setprecision(6) << r.segundos
+                 << " | " << setw(13) << left << r.milisegundos
+                 << " | " << setw(13) << left << r.microsegundos
+                 << " | " << setw(13) << left << r.nanosegundos
+                 << " |" << endl;
+        }
+        cout << "+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
+
+        // Al final del main, imprimir los primeros 5 registros del BST por ID y por nombre en formato de grilla
+        cout << "\nPrimeros 5 registros del BST por ID (in-order):" << endl;
+        cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        cout << "| id                  | nombre                   | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id            |" << endl;
+        cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        int contador_id = 0;
+        std::function<void(nodo_arbol_id*)> imprimir_id;
+        imprimir_id = [&](nodo_arbol_id* nodo) {
+            if (!nodo || contador_id >= 5) return;
+            imprimir_id(nodo->izquierdo);
+            if (contador_id < 5) {
+                string avatar_corto = nodo->usuario.avatar.length() > 15 ? nodo->usuario.avatar.substr(0, 15) + "..." : nodo->usuario.avatar;
+                cout << "| " << setw(19) << left << nodo->usuario.id
+                     << " | " << setw(24) << left << nodo->usuario.screen_name
+                     << " | " << setw(17) << left << (nodo->usuario.tags.empty() ? "0" : to_string(nodo->usuario.tags.size()))
+                     << " | " << setw(19) << left << avatar_corto
+                     << " | " << setw(15) << left << nodo->usuario.followers_count
+                     << " | " << setw(15) << left << nodo->usuario.friends_count
+                     << " | " << setw(8) << left << nodo->usuario.lang
+                     << " | " << setw(15) << left << nodo->usuario.last_seen
+                     << " | " << setw(15) << left << nodo->usuario.tweet_id
+                     << " |" << endl;
+                contador_id++;
+            }
+            imprimir_id(nodo->derecho);
+        };
+        imprimir_id(bst_id.raiz);
+        cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+
+        cout << "\nPrimeros 5 registros del BST por NOMBRE (in-order):" << endl;
+        cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        cout << "| nombre                   | id                  | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id            |" << endl;
+        cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
+        int contador_nombre = 0;
+        std::function<void(nodo_arbol_nombre*)> imprimir_nombre;
+        imprimir_nombre = [&](nodo_arbol_nombre* nodo) {
+            if (!nodo || contador_nombre >= 5) return;
+            imprimir_nombre(nodo->izquierdo);
+            if (contador_nombre < 5) {
+                string avatar_corto_nombre = nodo->usuario.avatar.length() > 15 ? nodo->usuario.avatar.substr(0, 15) + "..." : nodo->usuario.avatar;
+                cout << "| " << setw(24) << left << nodo->usuario.screen_name
+                     << " | " << setw(19) << left << nodo->usuario.id
+                     << " | " << setw(17) << left << (nodo->usuario.tags.empty() ? "0" : to_string(nodo->usuario.tags.size()))
+                     << " | " << setw(19) << left << avatar_corto_nombre
+                     << " | " << setw(15) << left << nodo->usuario.followers_count
+                     << " | " << setw(15) << left << nodo->usuario.friends_count
+                     << " | " << setw(8) << left << nodo->usuario.lang
+                     << " | " << setw(15) << left << nodo->usuario.last_seen
+                     << " | " << setw(15) << left << nodo->usuario.tweet_id
+                     << " |" << endl;
+                contador_nombre++;
+            }
+            imprimir_nombre(nodo->derecho);
+        };
+        imprimir_nombre(bst_nombre.raiz);
+        cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
 
         // Menú de búsqueda en bucle
         while (true) {
@@ -153,36 +364,74 @@ int main() {
                 long long id_buscar;
                 cout << "\nIngrese ID: ";
                 cin >> id_buscar;
-                auto inicio_busqueda = chrono::high_resolution_clock::now();
-                bool encontrado = bst_id.buscar_por_id(id_buscar);
-                auto fin_busqueda = chrono::high_resolution_clock::now();
-                chrono::duration<double> duracion_busqueda = fin_busqueda - inicio_busqueda;
-                resultado_busqueda = {"BST", "búsqueda", "id", encontrado ? 1 : 0, duracion_busqueda.count()};
-                hizo_busqueda = true;
-                if (encontrado) {
+                auto inicio_busqueda_id = chrono::high_resolution_clock::now();
+                bool existe = bst_id.buscar_por_id(id_buscar);
+                auto fin_busqueda_id = chrono::high_resolution_clock::now();
+                auto duracion_busqueda_id = chrono::duration_cast<chrono::nanoseconds>(fin_busqueda_id - inicio_busqueda_id);
+                if (existe) {
                     cout << "\nEncontrado: SI" << endl;
                 } else {
                     cout << "\nEncontrado: NO" << endl;
                 }
+                Usuario* usuario = bst_id.buscar_usuario([&](const Usuario& u){ return u.id == id_buscar; });
+                cout << "\nResultado de búsqueda por ID:" << endl;
+                cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
+                cout << "| id                  | nombre                   | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id        |" << endl;
+                cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
+                if (usuario) {
+                    string avatar_corto = usuario->avatar.length() > 15 ? usuario->avatar.substr(0, 15) + "..." : usuario->avatar;
+                    cout << "| " << setw(19) << left << usuario->id
+                         << " | " << setw(24) << left << usuario->screen_name
+                         << " | " << setw(17) << left << (usuario->tags.empty() ? "0" : to_string(usuario->tags.size()))
+                         << " | " << setw(19) << left << avatar_corto
+                         << " | " << setw(15) << left << usuario->followers_count
+                         << " | " << setw(15) << left << usuario->friends_count
+                         << " | " << setw(8) << left << usuario->lang
+                         << " | " << setw(15) << left << usuario->last_seen
+                         << " | " << setw(15) << left << usuario->tweet_id
+                         << " |" << endl;
+                } else {
+                    cout << "| No encontrado                                                                                                                      |" << endl;
+                }
+                cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
+                cout << "Tiempo: " << duracion_busqueda_id.count() << " ns" << endl;
             } else if (opcion_busqueda == 2) {
                 string nombre_buscar;
                 cout << "\nIngrese NOMBRE: ";
                 cin >> nombre_buscar;
-                // Limpiar comillas dobles del nombre a buscar
                 nombre_buscar.erase(std::remove(nombre_buscar.begin(), nombre_buscar.end(), '"'), nombre_buscar.end());
-                auto inicio_busqueda = chrono::high_resolution_clock::now();
-                bool encontrado = bst_nombre.buscar_por_nombre(nombre_buscar);
-                auto fin_busqueda = chrono::high_resolution_clock::now();
-                chrono::duration<double> duracion_busqueda = fin_busqueda - inicio_busqueda;
-                resultado_busqueda = {"BST", "búsqueda", "nombre", encontrado ? 1 : 0, duracion_busqueda.count()};
-                hizo_busqueda = true;
-                if (encontrado) {
+                auto inicio_busqueda_nombre = chrono::high_resolution_clock::now();
+                bool existe = bst_nombre.buscar_por_nombre(nombre_buscar);
+                auto fin_busqueda_nombre = chrono::high_resolution_clock::now();
+                auto duracion_busqueda_nombre = chrono::duration_cast<chrono::nanoseconds>(fin_busqueda_nombre - inicio_busqueda_nombre);
+                if (existe) {
                     cout << "\nEncontrado: SI" << endl;
                 } else {
                     cout << "\nEncontrado: NO" << endl;
                 }
+                Usuario* usuario = bst_nombre.buscar_usuario([&](const Usuario& u){ return u.screen_name == nombre_buscar; });
+                cout << "\nResultado de búsqueda por NOMBRE:" << endl;
+                cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
+                cout << "| nombre                   | id                  | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id        |" << endl;
+                cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
+                if (usuario) {
+                    string avatar_corto = usuario->avatar.length() > 15 ? usuario->avatar.substr(0, 15) + "..." : usuario->avatar;
+                    cout << "| " << setw(24) << left << usuario->screen_name
+                         << " | " << setw(19) << left << usuario->id
+                         << " | " << setw(17) << left << (usuario->tags.empty() ? "0" : to_string(usuario->tags.size()))
+                         << " | " << setw(19) << left << avatar_corto
+                         << " | " << setw(15) << left << usuario->followers_count
+                         << " | " << setw(15) << left << usuario->friends_count
+                         << " | " << setw(8) << left << usuario->lang
+                         << " | " << setw(15) << left << usuario->last_seen
+                         << " | " << setw(15) << left << usuario->tweet_id
+                         << " |" << endl;
+                } else {
+                    cout << "| No encontrado                                                                                                                      |" << endl;
+                }
+                cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
+                cout << "Tiempo: " << duracion_busqueda_nombre.count() << " ns" << endl;
             } else {
-                //cout << "Saliendo del menú de búsqueda." << endl;
                 break;
             }
             // Mostrar solo el resultado de la búsqueda actual

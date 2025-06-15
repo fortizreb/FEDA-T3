@@ -3,25 +3,33 @@
 
 #include "usuario.h"
 #include <string>
+#include <functional>
 using namespace std;
 
-class Nodo_Arbol_Nombre {
+class nodo_arbol_nombre {
 public:
     Usuario usuario;
-    Nodo_Arbol_Nombre* izquierdo;
-    Nodo_Arbol_Nombre* derecho;
-    Nodo_Arbol_Nombre(const Usuario& usuario);
+    nodo_arbol_nombre* izquierdo;
+    nodo_arbol_nombre* derecho;
+    nodo_arbol_nombre(const Usuario& usuario);
 };
 
-class Arbol_Binario_Nombre {
+class arbol_binario_nombre {
 public:
-    Nodo_Arbol_Nombre* raiz;
-    Arbol_Binario_Nombre();
+    nodo_arbol_nombre* raiz;
+    arbol_binario_nombre();
     void insertar(const Usuario& usuario);
     bool buscar_por_nombre(const string& nombre_usuario);
+    Usuario* buscar_usuario_por_nombre(const string& nombre_usuario); // Versión que retorna puntero al usuario encontrado (o nullptr)
+    void imprimir_primeros_n(int n);
+    // Búsqueda genérica por criterio
+    Usuario* buscar_usuario(std::function<bool(const Usuario&)> criterio);
 private:
-    Nodo_Arbol_Nombre* insertar_rec(Nodo_Arbol_Nombre* nodo, const Usuario& usuario);
-    bool buscar_por_nombre_rec(Nodo_Arbol_Nombre* nodo, const string& nombre_usuario);
+    nodo_arbol_nombre* insertar_rec(nodo_arbol_nombre* nodo, const Usuario& usuario);
+    bool buscar_por_nombre_rec(nodo_arbol_nombre* nodo, const string& nombre_usuario);
+    Usuario* buscar_usuario_por_nombre_rec(nodo_arbol_nombre* nodo, const string& nombre_usuario);
+    void imprimir_primeros_n_rec(nodo_arbol_nombre* nodo, int& contador, int n);
+    Usuario* buscar_usuario_rec(nodo_arbol_nombre* nodo, std::function<bool(const Usuario&)> criterio);
 };
 
 #endif

@@ -32,4 +32,17 @@ struct Usuario {
     vector<long long> friends; 
 };
 
+inline void limpiar_usuario(Usuario& u) {
+    u.id = 0;
+    u.screen_name = "";
+    u.tags.clear();
+    u.avatar = "";
+    u.followers_count = 0;
+    u.friends_count = 0;
+    u.lang = "";
+    u.last_seen = 0;
+    u.tweet_id = 0;
+    u.friends.clear();
+}
+
 #endif // USUARIO_H
