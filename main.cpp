@@ -8,26 +8,24 @@
 #include <iomanip> //para las funciones setw y setprecision de la grilla donde se muestran los resultados
 #include <algorithm>
 #include <vector>
-#include <tuple>
-#include <functional>
 using namespace std;
 
-// Funciones utilitarias para validar y asignar campos
-inline void asignar_si_valido(string& destino, const vector<string>& campos, size_t idx) {
+// Funciones para validar y asignar campos (inline para evitar overhead de llamadas)
+inline void asignar_si_valido_string(string& destino, const vector<string>& campos, size_t idx) {
     if (campos.size() > idx && !campos[idx].empty() && campos[idx] != "\"\"" && campos[idx] != "null") {
         destino = campos[idx];
     } else {
         destino = "";
     }
 }
-inline void asignar_si_valido(int& destino, const vector<string>& campos, size_t idx) {
+inline void asignar_si_valido_int(int& destino, const vector<string>& campos, size_t idx) {
     if (campos.size() > idx) {
         try { destino = stoi(campos[idx]); } catch (...) { destino = 0; }
     } else {
         destino = 0;
     }
 }
-inline void asignar_si_valido(long long& destino, const vector<string>& campos, size_t idx) {
+inline void asignar_si_valido_longlong(long long& destino, const vector<string>& campos, size_t idx) {
     if (campos.size() > idx) {
         try { destino = stoll(campos[idx]); } catch (...) { destino = 0; }
     } else {
@@ -35,14 +33,14 @@ inline void asignar_si_valido(long long& destino, const vector<string>& campos, 
     }
 }
 
-// Utilidad para limpiar comillas dobles y espacios
+// función para limpiar comillas dobles y espacios
 inline string limpiar_campo(const string& s) {
     string out = s;
     out.erase(remove(out.begin(), out.end(), '"'), out.end());
     out.erase(remove(out.begin(), out.end(), ' '), out.end());
     return out;
 }
-// Parsear vector<string> desde campo CSV tipo [tag1,tag2,...]
+// Parsear vector<string> desde csv tipo [tag1,tag2,...]
 inline vector<string> parsear_tags(const string& campo) {
     vector<string> tags;
     string limpio = limpiar_campo(campo);
@@ -56,7 +54,7 @@ inline vector<string> parsear_tags(const string& campo) {
     }
     return tags;
 }
-// Parsear vector<long long> desde campo CSV tipo [1,2,3]
+// Parsear friends desde CSV tipo [id1,id2,id3]
 inline vector<long long> parsear_friends(const string& campo) {
     vector<long long> friends;
     string limpio = limpiar_campo(campo);
@@ -71,417 +69,277 @@ inline vector<long long> parsear_friends(const string& campo) {
     return friends;
 }
 
-int menu() {
-    int opcion = 0;
-    cout << "Seleccione la estructura de datos a utilizar:\n";
-    cout << "1. Árbol Binario de Búsqueda (BST)\n";
-    cout << "2. Tabla Hash\n";
-    cout << "3. Vector (opcional)\n";    
-    cout << "4. Salir\n";
-    cout << "Opción: ";
-    cin >> opcion;
-    return opcion;
+struct ResultadoInsercion {
+    string ed;
+    string operacion;
+    string target;
+    int nodos;
+    double segundos;
+    long long milisegundos;
+    long long microsegundos;
+    long long nanosegundos;
+};
+
+
+//llenamos la estructura Usuario a partir de un vector de strings
+Usuario parsear_usuario(const vector<string>& campos) {
+    Usuario usuario;
+    string id_limpio = limpiar_campo(campos[0]);
+    asignar_si_valido_longlong(usuario.id, vector<string>{id_limpio}, 0);
+    usuario.screen_name = limpiar_campo(campos[1]);
+    usuario.tags = parsear_tags(campos[2]);
+    usuario.avatar = limpiar_campo(campos[3]);
+    asignar_si_valido_int(usuario.followers_count, campos, 4);
+    asignar_si_valido_int(usuario.friends_count, campos, 5);
+    usuario.lang = limpiar_campo(campos[6]);
+    // asignar_si_valido(usuario.last_seen, campos, 7);
+    asignar_si_valido_longlong(usuario.last_seen, campos, 7); // corregido para tipo long long
+    string tweet_id_limpio = limpiar_campo(campos[8]);
+    asignar_si_valido_longlong(usuario.tweet_id, vector<string>{tweet_id_limpio}, 0);
+    usuario.friends = parsear_friends(campos[9]);
+    return usuario;
+}
+
+// Optimización: parseo y validación rápida de usuarios desde CSV usando solo STL
+// Reemplaza el parseo de usuarios en contar_usuarios_validos_id y contar_usuarios_validos_nombre
+// y en la carga de usuarios para inserción
+
+// Nueva función de parseo rápido de línea CSV (sin manejo de comillas internas)
+inline void parsear_campos_csv(const string& linea, vector<string>& campos, size_t esperado = 10) {
+    campos.clear();
+    campos.reserve(esperado);
+    size_t start = 0, end = 0;
+    while ((end = linea.find(',', start)) != string::npos && campos.size() < esperado - 1) {
+        campos.push_back(linea.substr(start, end - start));
+        start = end + 1;
+    }
+    campos.push_back(linea.substr(start));
+}
+
+// Usar esta función en vez de parsear_csv en los lugares críticos
+// Ejemplo de uso en contar_usuarios_validos_id:
+// vector<string> campos;
+// parsear_campos_csv(linea_csv, campos);
+// ...
+/// (igual para la carga de usuarios en insertar_bst_id y nombre)
+
+//Función para inserción en BST-ID
+void insertar_bst_id(arbol_binario_id& bst, const string& archivo, std::vector<ResultadoInsercion>& grilla, double& tiempo_lectura, double& tiempo_insercion) {
+    auto inicio_lectura = chrono::high_resolution_clock::now();
+    ifstream archivo_csv(archivo);
+    if (!archivo_csv.is_open()) {
+        cerr << "No se pudo abrir el archivo: " << archivo << endl;
+        tiempo_lectura = 0;
+        tiempo_insercion = 0;
+        return;
+    }
+    string tmp_linea, linea_csv;
+    getline(archivo_csv, tmp_linea); // Cabecera
+    vector<Usuario> usuarios_validos;
+    while (getline(archivo_csv, linea_csv)) {
+        vector<string> campos;
+        parsear_campos_csv(linea_csv, campos);
+        if (campos.size() < 10) continue;
+        Usuario usuario = parsear_usuario(campos);
+        if (usuario.id > 0) usuarios_validos.push_back(usuario);
+    }
+    auto fin_lectura = chrono::high_resolution_clock::now();
+    tiempo_lectura = chrono::duration<double>(fin_lectura - inicio_lectura).count();
+    // Inserción incremental y medición acumulativa
+    bst = arbol_binario_id(); // Asegura árbol vacío
+    auto inicio_insercion = chrono::high_resolution_clock::now();
+    int idx = 0;
+    int max_registros = usuarios_validos.size();
+    for (int n = 0; n <= max_registros; n += 5000) {
+        if (n == 0) {
+            auto fin = chrono::high_resolution_clock::now();
+            auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin - inicio_insercion);
+            grilla.push_back({"BST", "inserción", "id", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+            continue;
+        }
+        for (; idx < n && idx < max_registros; ++idx) {
+            bst.insertar(usuarios_validos[idx]);
+        }
+        auto fin = chrono::high_resolution_clock::now();
+        auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin - inicio_insercion);
+        grilla.push_back({"BST", "inserción", "id", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+    }
+    auto fin_insercion = chrono::high_resolution_clock::now();
+    tiempo_insercion = chrono::duration<double>(fin_insercion - inicio_insercion).count();
+}
+
+void insertar_bst_nombre(arbol_binario_nombre& bst, const string& archivo, std::vector<ResultadoInsercion>& grilla, double& tiempo_lectura, double& tiempo_insercion) {
+    auto inicio_lectura = chrono::high_resolution_clock::now();
+    ifstream archivo_csv(archivo);
+    if (!archivo_csv.is_open()) {
+        cerr << "No se pudo abrir el archivo: " << archivo << endl;
+        tiempo_lectura = 0;
+        tiempo_insercion = 0;
+        return;
+    }
+    string tmp_linea, linea_csv;
+    getline(archivo_csv, tmp_linea); // Cabecera
+    vector<Usuario> usuarios_validos;
+    while (getline(archivo_csv, linea_csv)) {
+        vector<string> campos;
+        parsear_campos_csv(linea_csv, campos);
+        if (campos.size() < 10) continue;
+        Usuario usuario = parsear_usuario(campos);
+        if (!usuario.screen_name.empty()) usuarios_validos.push_back(usuario);
+    }
+    auto fin_lectura = chrono::high_resolution_clock::now();
+    tiempo_lectura = chrono::duration<double>(fin_lectura - inicio_lectura).count();
+    bst = arbol_binario_nombre(); // Asegura árbol vacío
+    auto inicio_insercion = chrono::high_resolution_clock::now();
+    int idx = 0;
+    int max_registros = usuarios_validos.size();
+    for (int n = 0; n <= max_registros; n += 5000) {
+        if (n == 0) {
+            auto fin = chrono::high_resolution_clock::now();
+            auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin - inicio_insercion);
+            grilla.push_back({"BST", "inserción", "nombre", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+            continue;
+        }
+        for (; idx < n && idx < max_registros; ++idx) {
+            bst.insertar(usuarios_validos[idx]);
+        }
+        auto fin = chrono::high_resolution_clock::now();
+        auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin - inicio_insercion);
+        grilla.push_back({"BST", "inserción", "nombre", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+    }
+    auto fin_insercion = chrono::high_resolution_clock::now();
+    tiempo_insercion = chrono::duration<double>(fin_insercion - inicio_insercion).count();
+}
+
+void imprimir_grilla_insercion(const vector<ResultadoInsercion>& grilla, const string& titulo, int total_filas, double tiempo_lectura, double tiempo_insercion) {
+    cout << "\n" << titulo;
+    cout << "\nLectura y filtrado [" << fixed << setprecision(3) << tiempo_lectura << " segundos]" << endl;
+    cout << "Inserción [" << fixed << setprecision(6) << tiempo_insercion << " segundos]";
+    cout << "\n+------+------------+---------------------+--------------------------+------------+---------------+---------------+---------------+" << endl;
+    cout << "| ED   | Operación  | Target              | Nodos creados/Total     | Segundos   | Milisegundos  | Microsegundos | Nanosegundos  |" << endl;
+    cout << "+------+------------+---------------------+--------------------------+------------+---------------+---------------+---------------+" << endl;
+    bool first = true;
+    ResultadoInsercion ultimo = grilla.back();
+    for (const auto& r : grilla) {
+        if (first && r.nodos == 0) { first = false; continue; } // omite el nodo 0
+        cout << "| " << setw(4) << left << r.ed
+             << " | " << setw(11) << left << r.operacion
+             << " | " << setw(19) << left << r.target
+             << " | " << setw(24) << left << (to_string(r.nodos) + "/" + to_string(total_filas))
+             << " | " << setw(10) << left << fixed << setprecision(6) << r.segundos
+             << " | " << setw(13) << left << r.milisegundos
+             << " | " << setw(13) << left << r.microsegundos
+             << " | " << setw(13) << left << r.nanosegundos
+             << " |" << endl;
+        first = false;
+    }
+    // Footer con el tiempo real total de inserción (última fila)
+    cout << "+------+------------+---------------------+--------------------------+------------+---------------+---------------+---------------+" << endl;
+    cout << "| " << setw(4) << left << "TOT"
+         << " | " << setw(10) << left << "-"
+         << " | " << setw(19) << left << "-"
+         << " | " << setw(24) << left << "-"
+         << " | " << setw(10) << left << fixed << setprecision(6) << ultimo.segundos
+         << " | " << setw(13) << left << ultimo.milisegundos
+         << " | " << setw(13) << left << ultimo.microsegundos
+         << " | " << setw(13) << left << ultimo.nanosegundos
+         << " |" << endl;
+    cout << "+------+------------+---------------------+--------------------------+------------+---------------+---------------+---------------+" << endl;
+}
+
+void menu_busqueda(arbol_binario_id& bst_id, arbol_binario_nombre& bst_nombre) {
+    while (true) {
+        int opcion_busqueda = 0;
+        cout << "\nBÚSQUEDA:" << endl;
+        cout << "1. Buscar por id" << endl;
+        cout << "2. Buscar por nombre" << endl;
+        cout << "3. Salir" << endl;
+        cout << "Opción: ";
+        cin >> opcion_busqueda;
+        string target_str, campo_str;
+        double segundos = 0;
+        long long milis = 0, micros = 0, nanos = 0;
+        if (opcion_busqueda == 1) {
+            long long id_buscar;
+            cout << "\nIngrese ID: ";
+            cin >> id_buscar;
+            auto inicio = chrono::high_resolution_clock::now();
+            bool existe = bst_id.buscar_por_id(id_buscar);
+            auto fin = chrono::high_resolution_clock::now();
+            auto duracion = chrono::duration_cast<chrono::nanoseconds>(fin - inicio);
+            cout << (existe ? "\nEncontrado: SI" : "\nEncontrado: NO") << endl;
+            target_str = to_string(id_buscar);
+            campo_str = "ID";
+            segundos = (double)duracion.count()/1e9;
+            milis = duracion.count()/1000000;
+            micros = duracion.count()/1000;
+            nanos = duracion.count();
+        } else if (opcion_busqueda == 2) {
+            string nombre_buscar;
+            cout << "\nIngrese NOMBRE: ";
+            cin >> nombre_buscar;
+            nombre_buscar.erase(std::remove(nombre_buscar.begin(), nombre_buscar.end(), '"'), nombre_buscar.end());
+            auto inicio = chrono::high_resolution_clock::now();
+            bool existe = bst_nombre.buscar_por_nombre(nombre_buscar);
+            auto fin = chrono::high_resolution_clock::now();
+            auto duracion = chrono::duration_cast<chrono::nanoseconds>(fin - inicio);
+            cout << (existe ? "\nEncontrado: SI" : "\nEncontrado: NO") << endl;
+            target_str = nombre_buscar;
+            campo_str = "NOMBRE";
+            segundos = (double)duracion.count()/1e9;
+            milis = duracion.count()/1000000;
+            micros = duracion.count()/1000;
+            nanos = duracion.count();
+        } else {
+            break;
+        }
+        // Grilla de tiempos de búsqueda
+        cout << "\n+------+------------+---------------------+---------------------+------------+---------------+---------------+---------------+" << endl;
+        cout << "| ED   | Operación  | Target              | Valor              | Segundos   | Milisegundos  | Microsegundos | Nanosegundos  |" << endl;
+        cout << "+------+------------+---------------------+---------------------+------------+---------------+---------------+---------------+" << endl;
+        cout << "| " << setw(4) << left << "BST"
+             << " | " << setw(11) << left << "búsqueda"
+             << " | " << setw(19) << left << campo_str
+             << " | " << setw(19) << left << target_str
+             << " | " << setw(10) << left << fixed << setprecision(6) << segundos
+             << " | " << setw(13) << left << milis
+             << " | " << setw(13) << left << micros
+             << " | " << setw(13) << left << nanos
+             << " |" << endl;
+        cout << "+------+------------+---------------------+---------------------+------------+---------------+---------------+---------------+" << endl;
+    }
 }
 
 int main() {
-    int opcion = 0;
-    //opcion = menu();
-    opcion = 1; // Para pruebas, forzamos a usar BST
+    auto inicio_total = chrono::high_resolution_clock::now();
+    int opcion = 1; // o menu();
+    if (opcion == 1) {        
 
-    if (opcion == 1) {
-        cout << "Cargando datos en BST, espere un momento" << endl;
-        // Vector para almacenar las filas de la grilla
-        struct ResultadoInsercion {
-            string ed;
-            string operacion;
-            string target;
-            int nodos;
-            double segundos;
-            long long milisegundos;
-            long long microsegundos;
-            long long nanosegundos;
-        };
-        vector<ResultadoInsercion> grilla_id;
-        vector<ResultadoInsercion> grilla_nombre;
         arbol_binario_id bst_id;
+        vector<ResultadoInsercion> grilla_id; // 
+
         arbol_binario_nombre bst_nombre;
-        ifstream archivo_csv("data.csv");
-        if (!archivo_csv.is_open()) {
-            cerr << "No se pudo abrir el archivo: data.csv" << endl;
-            return 1;
-        }
-        // Contar total de filas (sin cabecera)
-        int total_filas = 0;
-        string tmp_linea;
-
-        /* Aquí contamos cuantas filas hay. Esto es solo para comparar la cantidad de registros vs total de filas*/
-        getline(archivo_csv, tmp_linea); //lectura forzada para sacar la cabecera del set.
-        while (getline(archivo_csv, tmp_linea)){
-            total_filas++; //para contar el total
-        }   
-
-        /* RESET DATA SET  */
-        archivo_csv.clear(); // limpiamos todos los flags del stream.
-        archivo_csv.seekg(0); //reseteamos el puntero del set al inicio
-        getline(archivo_csv, tmp_linea); // Cabecera de nuevo ya que que comenzamos denuevo la lectura del set.
-
-        /***************************** INSERTAR EN BST POR ID  ****************************/
-        // --- NUEVO LÍMITE DE 10,000 INSERCIONES PARA BST POR ID ---
-        archivo_csv.clear();
-        archivo_csv.seekg(0);
-        getline(archivo_csv, tmp_linea); // Cabecera
-        int nodos_validos_id = 0;
-        vector<Usuario> buffer_usuarios_id;
-        buffer_usuarios_id.reserve(5000);
-        string linea_csv; // Declaración necesaria para los bucles de inserción
-        while (getline(archivo_csv, linea_csv)) {
-            // if (nodos_validos_id >= 10000) break; // <--- Comentado para permitir hasta 40000
-            vector<string> campos = parsear_csv(linea_csv);
-            if (campos.size() < 10) continue;
-            Usuario usuario;
-            // ID
-            string id_limpio = limpiar_campo(campos[0]);
-            asignar_si_valido(usuario.id, vector<string>{id_limpio}, 0);
-            // Nombre
-            usuario.screen_name = limpiar_campo(campos[1]);
-            // Tags
-            usuario.tags = parsear_tags(campos[2]);
-            // Avatar
-            usuario.avatar = limpiar_campo(campos[3]);
-            // Followers count
-            asignar_si_valido(usuario.followers_count, campos, 4);
-            // Friends count
-            asignar_si_valido(usuario.friends_count, campos, 5);
-            // Lang
-            usuario.lang = limpiar_campo(campos[6]);
-            // Last seen
-            asignar_si_valido(usuario.last_seen, campos, 7);
-            // Tweet id
-            string tweet_id_limpio = limpiar_campo(campos[8]);
-            asignar_si_valido(usuario.tweet_id, vector<string>{tweet_id_limpio}, 0);
-            // Friends
-            usuario.friends = parsear_friends(campos[9]);
-            if (usuario.id > 0) {
-                buffer_usuarios_id.push_back(usuario);
-            }
-            if (buffer_usuarios_id.size() == 5000) {
-                auto inicio_bloque = chrono::high_resolution_clock::now();
-                for (const auto& u : buffer_usuarios_id) {
-                    // if (nodos_validos_id >= 10000) break; // <--- Comentado para permitir hasta 40000
-                    bst_id.insertar(u);
-                    nodos_validos_id++;
-                }
-                auto fin_bloque = chrono::high_resolution_clock::now();
-                auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin_bloque - inicio_bloque);
-                grilla_id.push_back({"BST", "inserción", "id", nodos_validos_id, duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
-                buffer_usuarios_id.clear();
-            }
-            if (nodos_validos_id == 40000) break;
-        }
-        // Si quedan usuarios en el buffer y no se llegó a 10,000 nodos
-        if (!buffer_usuarios_id.empty() && nodos_validos_id < 10000) {
-            auto inicio_bloque = chrono::high_resolution_clock::now();
-            for (const auto& u : buffer_usuarios_id) {
-                // if (nodos_validos_id >= 10000) break; // <--- Comentado para permitir hasta 40000
-                bst_id.insertar(u);
-                nodos_validos_id++;
-            }
-            auto fin_bloque = chrono::high_resolution_clock::now();
-            auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin_bloque - inicio_bloque);
-            grilla_id.push_back({"BST", "inserción", "id", nodos_validos_id, duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
-        }
-
-
-        /* RESET DATA SET  */
-        archivo_csv.clear();
-        archivo_csv.seekg(0);
-        getline(archivo_csv, tmp_linea);
-        // --- NUEVO LÍMITE DE 10,000 INSERCIONES PARA BST POR NOMBRE ---
-        int nodos_validos_nombre = 0;
-        vector<Usuario> buffer_usuarios_nombre;
-        buffer_usuarios_nombre.reserve(5000);
-        while (getline(archivo_csv, linea_csv)) {
-            // if (nodos_validos_nombre >= 10000) break; // <--- Comentado para permitir hasta 40000
-            vector<string> campos = parsear_csv(linea_csv);
-            if (campos.size() < 10) continue;
-            Usuario usuario;
-            // ID
-            string id_limpio = limpiar_campo(campos[0]);
-            asignar_si_valido(usuario.id, vector<string>{id_limpio}, 0);
-            // Nombre
-            usuario.screen_name = limpiar_campo(campos[1]);
-            // Tags
-            usuario.tags = parsear_tags(campos[2]);
-            // Avatar
-            usuario.avatar = limpiar_campo(campos[3]);
-            // Followers count
-            asignar_si_valido(usuario.followers_count, campos, 4);
-            // Friends count
-            asignar_si_valido(usuario.friends_count, campos, 5);
-            // Lang
-            usuario.lang = limpiar_campo(campos[6]);
-            // Last seen
-            asignar_si_valido(usuario.last_seen, campos, 7);
-            // Tweet id
-            string tweet_id_limpio = limpiar_campo(campos[8]);
-            asignar_si_valido(usuario.tweet_id, vector<string>{tweet_id_limpio}, 0);
-            // Friends
-            usuario.friends = parsear_friends(campos[9]);
-            if (!usuario.screen_name.empty()) {
-                buffer_usuarios_nombre.push_back(usuario);
-            }
-            if (buffer_usuarios_nombre.size() == 5000) {
-                auto inicio_bloque = chrono::high_resolution_clock::now();
-                for (const auto& u : buffer_usuarios_nombre) {
-                    // if (nodos_validos_nombre >= 10000) break; // <--- Comentado para permitir hasta 40000
-                    bst_nombre.insertar(u);
-                    nodos_validos_nombre++;
-                }
-                auto fin_bloque = chrono::high_resolution_clock::now();
-                auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin_bloque - inicio_bloque);
-                grilla_nombre.push_back({"BST", "inserción", "nombre", nodos_validos_nombre, duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
-                buffer_usuarios_nombre.clear();
-            }
-            if (nodos_validos_nombre == 40000) break;
-        }
-        if (!buffer_usuarios_nombre.empty()) {
-            auto inicio_bloque = chrono::high_resolution_clock::now();
-            for (const auto& u : buffer_usuarios_nombre) {
-                bst_nombre.insertar(u);
-                nodos_validos_nombre++;
-            }
-            auto fin_bloque = chrono::high_resolution_clock::now();
-            auto duracion_ns = chrono::duration_cast<chrono::nanoseconds>(fin_bloque - inicio_bloque);
-            grilla_nombre.push_back({"BST", "inserción", "nombre", nodos_validos_nombre, duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
-        }
-
-
-        cout << "\nINSERCIÓN BST POR ID:";
-        // Mostrar grilla inicial con formato actualizado
-        cout << "\n+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
-        cout << "| ED   | Operación  | Target              | Nodos creados      | Segundos   | Milisegundos  | Microsegundos | Nanosegundos  |" << endl;
-        cout << "+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
-        for (const auto& r : grilla_id) {
-            cout << "| " << setw(4) << left << r.ed
-                 << " | " << setw(10) << left << r.operacion
-                 << " | " << setw(19) << left << r.target
-                 << " | " << setw(18) << left << r.nodos
-                 << " | " << setw(10) << left << fixed << setprecision(6) << r.segundos
-                 << " | " << setw(13) << left << r.milisegundos
-                 << " | " << setw(13) << left << r.microsegundos
-                 << " | " << setw(13) << left << r.nanosegundos
-                 << " |" << endl;
-        }
-        cout << "+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
-
-        cout << "\nINSERCIÓN BST POR NOMBRE:";
-        cout << "\n+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
-        cout << "| ED   | Operación  | Target              | Nodos creados      | Segundos   | Milisegundos  | Microsegundos | Nanosegundos  |" << endl;
-        cout << "+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
-        for (const auto& r : grilla_nombre) {
-            cout << "| " << setw(4) << left << r.ed
-                 << " | " << setw(10) << left << r.operacion
-                 << " | " << setw(19) << left << r.target
-                 << " | " << setw(18) << left << r.nodos
-                 << " | " << setw(10) << left << fixed << setprecision(6) << r.segundos
-                 << " | " << setw(13) << left << r.milisegundos
-                 << " | " << setw(13) << left << r.microsegundos
-                 << " | " << setw(13) << left << r.nanosegundos
-                 << " |" << endl;
-        }
-        cout << "+------+------------+---------------------+--------------------+------------+---------------+---------------+---------------+" << endl;
-
-        // --- OCULTADO: Grillas de los primeros 5 registros del BST por ID y por NOMBRE ---
-        // cout << "\nPrimeros 5 registros del BST por ID (in-order):" << endl;
-        // cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-        // cout << "| id                  | nombre                   | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id            |" << endl;
-        // cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-        // int contador_id = 0;
-        // std::function<void(nodo_arbol_id*)> imprimir_id;
-        // imprimir_id = [&](nodo_arbol_id* nodo) {
-        //     if (!nodo || contador_id >= 5) return;
-        //     imprimir_id(nodo->izquierdo);
-        //     if (contador_id < 5) {
-        //         string avatar_corto = nodo->usuario.avatar.length() > 15 ? nodo->usuario.avatar.substr(0, 15) + "..." : nodo->usuario.avatar;
-        //         cout << "| " << setw(19) << left << nodo->usuario.id
-        //              << " | " << setw(24) << left << nodo->usuario.screen_name
-        //              << " | " << setw(17) << left << (nodo->usuario.tags.empty() ? "0" : to_string(nodo->usuario.tags.size()))
-        //              << " | " << setw(19) << left << avatar_corto
-        //              << " | " << setw(15) << left << nodo->usuario.followers_count
-        //              << " | " << setw(15) << left << nodo->usuario.friends_count
-        //              << " | " << setw(8) << left << nodo->usuario.lang
-        //              << " | " << setw(15) << left << nodo->usuario.last_seen
-        //              << " | " << setw(15) << left << nodo->usuario.tweet_id
-        //              << " |" << endl;
-        //         contador_id++;
-        //     }
-        //     imprimir_id(nodo->derecho);
-        // };
-        // imprimir_id(bst_id.raiz);
-        // cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-
-        // cout << "\nPrimeros 5 registros del BST por NOMBRE (in-order):" << endl;
-        // cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-        // cout << "| nombre                   | id                  | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id            |" << endl;
-        // cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-        // int contador_nombre = 0;
-        // std::function<void(nodo_arbol_nombre*)> imprimir_nombre;
-        // imprimir_nombre = [&](nodo_arbol_nombre* nodo) {
-        //     if (!nodo || contador_nombre >= 5) return;
-        //     imprimir_nombre(nodo->izquierdo);
-        //     if (contador_nombre < 5) {
-        //         string avatar_corto_nombre = nodo->usuario.avatar.length() > 15 ? nodo->usuario.avatar.substr(0, 15) + "..." : nodo->usuario.avatar;
-        //         cout << "| " << setw(24) << left << nodo->usuario.screen_name
-        //              << " | " << setw(19) << left << nodo->usuario.id
-        //              << " | " << setw(17) << left << (nodo->usuario.tags.empty() ? "0" : to_string(nodo->usuario.tags.size()))
-        //              << " | " << setw(19) << left << avatar_corto_nombre
-        //              << " | " << setw(15) << left << nodo->usuario.followers_count
-        //              << " | " << setw(15) << left << nodo->usuario.friends_count
-        //              << " | " << setw(8) << left << nodo->usuario.lang
-        //              << " | " << setw(15) << left << nodo->usuario.last_seen
-        //              << " | " << setw(15) << left << nodo->usuario.tweet_id
-        //              << " |" << endl;
-        //         contador_nombre++;
-        //     }
-        //     imprimir_nombre(nodo->derecho);
-        // };
-        // imprimir_nombre(bst_nombre.raiz);
-        // cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+---------------------+" << endl;
-
-        // Menú de búsqueda en bucle
-        while (true) {
-            int opcion_busqueda = 0;
-            cout << "\nBÚSQUEDA:" << endl;
-            //cout << "\n¿Qué tipo de búsqueda desea realizar?" << endl;
-            cout << "1. Buscar por id" << endl;
-            cout << "2. Buscar por nombre" << endl;
-            cout << "3. Salir" << endl;
-            cout << "Opción: ";
-            cin >> opcion_busqueda;
-            tuple<string, string, string, int, double> resultado_busqueda;
-            bool hizo_busqueda = false;
-            // --- Variables auxiliares para la grilla de búsqueda ---
-            string target_str, campo_str;
-            double segundos = 0;
-            long long milis = 0, micros = 0, nanos = 0;
-            if (opcion_busqueda == 1) {
-                long long id_buscar;
-                cout << "\nIngrese ID: ";
-                cin >> id_buscar;
-                auto inicio_busqueda_id = chrono::high_resolution_clock::now();
-                bool existe = bst_id.buscar_por_id(id_buscar);
-                auto fin_busqueda_id = chrono::high_resolution_clock::now();
-                auto duracion_busqueda_id = chrono::duration_cast<chrono::nanoseconds>(fin_busqueda_id - inicio_busqueda_id);
-                if (existe) {
-                    cout << "\nEncontrado: SI" << endl;
-                } else {
-                    cout << "\nEncontrado: NO" << endl;
-                }
-                Usuario* usuario = bst_id.buscar_usuario([&](const Usuario& u){ return u.id == id_buscar; });
-                cout << "\nResultado de búsqueda por ID:" << endl;
-                cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
-                cout << "| id                  | nombre                   | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id        |" << endl;
-                cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
-                if (usuario) {
-                    string avatar_corto = usuario->avatar.length() > 15 ? usuario->avatar.substr(0, 15) + "..." : usuario->avatar;
-                    cout << "| " << setw(19) << left << usuario->id
-                         << " | " << setw(24) << left << usuario->screen_name
-                         << " | " << setw(17) << left << (usuario->tags.empty() ? "0" : to_string(usuario->tags.size()))
-                         << " | " << setw(19) << left << avatar_corto
-                         << " | " << setw(15) << left << usuario->followers_count
-                         << " | " << setw(15) << left << usuario->friends_count
-                         << " | " << setw(8) << left << usuario->lang
-                         << " | " << setw(15) << left << usuario->last_seen
-                         << " | " << setw(15) << left << usuario->tweet_id
-                         << " |" << endl;
-                } else {
-                    cout << "| No encontrado                                                                                                                      |" << endl;
-                }
-                cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
-                cout << "\nTIEMPO:";
-                // --- Guardar datos para la grilla ---
-                target_str = to_string(id_buscar);
-                campo_str = "ID";
-                segundos = (double)duracion_busqueda_id.count()/1e9;
-                milis = duracion_busqueda_id.count()/1000000;
-                micros = duracion_busqueda_id.count()/1000;
-                nanos = duracion_busqueda_id.count();
-            } else if (opcion_busqueda == 2) {
-                string nombre_buscar;
-                cout << "\nIngrese NOMBRE: ";
-                cin >> nombre_buscar;
-                nombre_buscar.erase(std::remove(nombre_buscar.begin(), nombre_buscar.end(), '"'), nombre_buscar.end());
-                auto inicio_busqueda_nombre = chrono::high_resolution_clock::now();
-                bool existe = bst_nombre.buscar_por_nombre(nombre_buscar);
-                auto fin_busqueda_nombre = chrono::high_resolution_clock::now();
-                auto duracion_busqueda_nombre = chrono::duration_cast<chrono::nanoseconds>(fin_busqueda_nombre - inicio_busqueda_nombre);
-                if (existe) {
-                    cout << "\nEncontrado: SI" << endl;
-                } else {
-                    cout << "\nEncontrado: NO" << endl;
-                }
-                Usuario* usuario = bst_nombre.buscar_usuario([&](const Usuario& u){ return u.screen_name == nombre_buscar; });
-                cout << "\nResultado de búsqueda por NOMBRE:" << endl;
-                cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
-                cout << "| nombre                   | id                  | tags (cantidad)   | avatar              | followers_count | friends_count   | lang     | last_seen       | tweet_id        |" << endl;
-                cout << "+---------------------+--------------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
-                if (usuario) {
-                    string avatar_corto = usuario->avatar.length() > 15 ? usuario->avatar.substr(0, 15) + "..." : usuario->avatar;
-                    cout << "| " << setw(24) << left << usuario->screen_name
-                         << " | " << setw(19) << left << usuario->id
-                         << " | " << setw(17) << left << (usuario->tags.empty() ? "0" : to_string(usuario->tags.size()))
-                         << " | " << setw(19) << left << avatar_corto
-                         << " | " << setw(15) << left << usuario->followers_count
-                         << " | " << setw(15) << left << usuario->friends_count
-                         << " | " << setw(8) << left << usuario->lang
-                         << " | " << setw(15) << left << usuario->last_seen
-                         << " | " << setw(15) << left << usuario->tweet_id
-                         << " |" << endl;
-                } else {
-                    cout << "| No encontrado                                                                                                                      |" << endl;
-                }
-                cout << "+--------------------------+---------------------+-------------------+---------------------+-----------------+-----------------+----------+-----------------+-----------------+" << endl;
-                cout << "Tiempo: " << duracion_busqueda_nombre.count() << " ns" << endl;
-                // --- Guardar datos para la grilla ---
-                target_str = nombre_buscar;
-                campo_str = "NOMBRE";
-                segundos = (double)duracion_busqueda_nombre.count()/1e9;
-                milis = duracion_busqueda_nombre.count()/1000000;
-                micros = duracion_busqueda_nombre.count()/1000;
-                nanos = duracion_busqueda_nombre.count();
-            } else {
-                break;
-            }
-
-            // --- NUEVA GRILLA DE RESULTADO DE BÚSQUEDA ---
-            cout << "\n+------+------------+---------------------+---------------------+------------+---------------+---------------+---------------+" << endl;
-            cout << "| ED   | Operación  | Target              | Campo              | Segundos   | Milisegundos  | Microsegundos | Nanosegundos  |" << endl;
-            cout << "+------+------------+---------------------+---------------------+------------+---------------+---------------+---------------+" << endl;
-            cout << "| " << setw(4) << left << "BST"
-                 << " | " << setw(10) << left << "búsqueda"
-                 << " | " << setw(19) << left << target_str
-                 << " | " << setw(19) << left << campo_str
-                 << " | " << setw(10) << left << fixed << setprecision(6) << segundos
-                 << " | " << setw(13) << left << milis
-                 << " | " << setw(13) << left << micros
-                 << " | " << setw(13) << left << nanos
-                 << " |" << endl;
-            cout << "+------+------------+---------------------+---------------------+------------+---------------+---------------+---------------+" << endl;
-        }
+        vector<ResultadoInsercion> grilla_nombre;
 
         
+        /******* INSERCIÓN BST-ID **********/
+        double tiempo_lectura_id = 0, tiempo_insercion_id = 0;
+        cout << "Cargando datos en BST por ID..." << endl;
+        insertar_bst_id(bst_id, "data.csv", grilla_id, tiempo_lectura_id, tiempo_insercion_id);
+        imprimir_grilla_insercion(grilla_id, "INSERCIÓN BST POR ID:", grilla_id.empty() ? 0 : grilla_id.back().nodos, tiempo_lectura_id, tiempo_insercion_id);
         
-    } else if (opcion == 2) {
-        cout << "Trabajando con Tabla Hash" << endl;
-        // Aquí irá la lógica para Hash
-    } else if (opcion == 3) {
-        cout << "Trabajando con Vector" << endl;
-        vector<Usuario> usuarios = leer_usuarios_desde_csv("data.csv");
-        cout << "Usuarios cargados en vector: " << usuarios.size() << endl;
-        // Aquí puedes agregar más lógica para trabajar con el vector
-    } else {
-        cout << "Opción no válida." << endl;
-        return 1;
+        cout << "\n\n";
+        
+        /******* INSERCIÓN BST-NOMBRE **********/
+        double tiempo_lectura_nombre = 0, tiempo_insercion_nombre = 0;
+        cout << "Cargando datos en BST por NOMBRE..." << endl;
+        insertar_bst_nombre(bst_nombre, "data.csv", grilla_nombre, tiempo_lectura_nombre, tiempo_insercion_nombre);
+        imprimir_grilla_insercion(grilla_nombre, "INSERCIÓN BST POR NOMBRE:", grilla_nombre.empty() ? 0 : grilla_nombre.back().nodos, tiempo_lectura_nombre, tiempo_insercion_nombre);
+       
+        auto fin_total = chrono::high_resolution_clock::now();
+        cout << "\n\rTOTAL proceso: [" << fixed << setprecision(3) << chrono::duration<double>(fin_total - inicio_total).count() << " segundos]" << endl;
+        
+        menu_busqueda(bst_id, bst_nombre);
     }
     return 0;
 }
