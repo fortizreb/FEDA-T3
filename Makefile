@@ -10,3 +10,7 @@ $(TARGET): $(SRC)
 
 clean:
 	rm -f $(TARGET)
+
+
+#file Makefile para probar si CRLF (en mac no funca)
+#dos2unix Makefile

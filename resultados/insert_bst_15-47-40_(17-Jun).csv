@@ -1,0 +1,17 @@
+n_usuarios,clave,tiempo_ms
+5000,id,63.0
+10000,id,106.0
+15000,id,160.0
+20000,id,206.0
+25000,id,261.0
+30000,id,314.0
+35000,id,368.0
+40000,id,427.0
+5000,screenName,77.0
+10000,screenName,129.0
+15000,screenName,203.0
+20000,screenName,271.0
+25000,screenName,329.0
+30000,screenName,394.0
+35000,screenName,454.0
+40000,screenName,524.0
