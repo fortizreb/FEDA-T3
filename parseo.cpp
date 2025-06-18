@@ -167,3 +167,106 @@ void busqueda_bst(const arbol_binario_id& bst_id, const arbol_binario_nombre& bs
 std::vector<Usuario> leer_usuarios_validos_csv(const std::string& archivo);
 void insertar_bst_id(arbol_binario_id& arbol, const std::string& archivo, std::vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
 void insertar_bst_nombre(arbol_binario_nombre& arbol, const std::string& archivo, std::vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
+
+// Funciones de parseo y limpieza
+std::string limpiar_campo(const std::string& s) {
+    std::string out = s;
+    out.erase(remove(out.begin(), out.end(), '"'), out.end());
+    out.erase(remove(out.begin(), out.end(), ' '), out.end());
+    return out;
+}
+
+std::vector<std::string> parsear_tags(const std::string& campo) {
+    std::vector<std::string> tags;
+    std::string limpio = limpiar_campo(campo);
+    if (limpio.size() > 2 && limpio.front() == '[' && limpio.back() == ']') {
+        std::string inner = limpio.substr(1, limpio.size() - 2);
+        std::stringstream ss(inner);
+        std::string tag;
+        while (getline(ss, tag, ',')) {
+            if (!tag.empty()) tags.push_back(tag);
+        }
+    }
+    return tags;
+}
+
+std::vector<long long> parsear_friends(const std::string& campo) {
+    std::vector<long long> friends;
+    std::string limpio = limpiar_campo(campo);
+    if (limpio.size() > 2 && limpio.front() == '[' && limpio.back() == ']') {
+        std::string inner = limpio.substr(1, limpio.size() - 2);
+        std::stringstream ss(inner);
+        std::string num;
+        while (getline(ss, num, ',')) {
+            try { if (!num.empty()) friends.push_back(stoll(num)); } catch (...) {}
+        }
+    }
+    return friends;
+}
+
+Usuario parsear_usuario(const std::vector<std::string>& campos) {
+    Usuario usuario;
+    std::string id_limpio = limpiar_campo(campos[0]);
+    usuario.id = (!id_limpio.empty() && std::all_of(id_limpio.begin(), id_limpio.end(), ::isdigit)) ? std::stoll(id_limpio) : 0;
+    usuario.screen_name = limpiar_campo(campos[1]);
+    usuario.tags = parsear_tags(campos[2]);
+    usuario.avatar = limpiar_campo(campos[3]);
+    usuario.followers_count = (campos.size() > 4 && !campos[4].empty() && std::all_of(campos[4].begin(), campos[4].end(), ::isdigit)) ? std::stoi(campos[4]) : 0;
+    usuario.friends_count = (campos.size() > 5 && !campos[5].empty() && std::all_of(campos[5].begin(), campos[5].end(), ::isdigit)) ? std::stoi(campos[5]) : 0;
+    usuario.lang = limpiar_campo(campos[6]);
+    usuario.last_seen = (campos.size() > 7 && !campos[7].empty() && std::all_of(campos[7].begin(), campos[7].end(), ::isdigit)) ? std::stoll(campos[7]) : 0;
+    std::string tweet_id_limpio = limpiar_campo(campos[8]);
+    usuario.tweet_id = (!tweet_id_limpio.empty() && std::all_of(tweet_id_limpio.begin(), tweet_id_limpio.end(), ::isdigit)) ? std::stoll(tweet_id_limpio) : 0;
+    usuario.friends = parsear_friends(campos[9]);
+    return usuario;
+}
+
+void parsear_campos_csv(const std::string& linea, std::vector<std::string>& campos, size_t esperado) {
+    campos.clear();
+    campos.reserve(esperado);
+    size_t start = 0, end = 0;
+    while ((end = linea.find(',', start)) != std::string::npos && campos.size() < esperado - 1) {
+        campos.push_back(linea.substr(start, end - start));
+        start = end + 1;
+    }
+    campos.push_back(linea.substr(start));
+}
+
+void asignar_si_valido_string(std::string& destino, const std::vector<std::string>& campos, size_t idx) {
+    if (campos.size() > idx && !campos[idx].empty() && campos[idx] != "\"\"" && campos[idx] != "null") {
+        destino = campos[idx];
+    } else {
+        destino = "";
+    }
+}
+void asignar_si_valido_int(int& destino, const std::vector<std::string>& campos, size_t idx) {
+    if (campos.size() > idx) {
+        try { destino = std::stoi(campos[idx]); } catch (...) { destino = 0; }
+    } else {
+        destino = 0;
+    }
+}
+void asignar_si_valido_longlong(long long& destino, const std::vector<std::string>& campos, size_t idx) {
+    if (campos.size() > idx) {
+        try { destino = std::stoll(campos[idx]); } catch (...) { destino = 0; }
+    } else {
+        destino = 0;
+    }
+}
+
+std::vector<Usuario> leer_usuarios_validos_csv(const std::string& archivo) {
+    std::vector<Usuario> usuarios_validos;
+    std::ifstream archivo_csv(archivo);
+    if (!archivo_csv.is_open()) return usuarios_validos;
+    std::string tmp_linea, linea_csv;
+    getline(archivo_csv, tmp_linea); // Cabecera
+    while (getline(archivo_csv, linea_csv)) {
+        std::vector<std::string> campos;
+        parsear_campos_csv(linea_csv, campos, 10);
+        if (campos.size() < 10) continue;
+        Usuario usuario = parsear_usuario(campos);
+        if (usuario.id > 0 && !usuario.screen_name.empty()) usuarios_validos.push_back(usuario);
+        if (usuarios_validos.size() >= LIMITE_USUARIOS) break;
+    }
+    return usuarios_validos;
+}

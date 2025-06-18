@@ -1,9 +1,0 @@
-n_usuarios,clave,tipo_busqueda,tiempo_us
-5000,id,exitosa,1.2
-5000,id,fallida,0.0
-5000,screenName,exitosa,2.2
-5000,screenName,fallida,2.3
-10000,id,exitosa,1.4
-10000,id,fallida,0.0
-10000,screenName,exitosa,2.2
-10000,screenName,fallida,2.5

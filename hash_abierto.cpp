@@ -10,23 +10,25 @@
 #include <sstream>
 #include <algorithm>
 
+using namespace std;
+
 struct Usuario {
     long long id;
-    std::string screen_name;
-    std::vector<std::string> tags;
-    std::string avatar;
+    string screen_name;
+    vector<string> tags;
+    string avatar;
     int followers_count;
     int friends_count;
-    std::string lang;
+    string lang;
     long long last_seen;
     long long tweet_id;
-    std::vector<long long> friends;
+    vector<long long> friends;
 };
 
 struct resultado_insercion {
-    std::string estructura_datos;
-    std::string operacion;
-    std::string objetivo;
+    string estructura_datos;
+    string operacion;
+    string objetivo;
     int cantidad_nodos;
     double segundos;
     long long milisegundos;
@@ -36,8 +38,8 @@ struct resultado_insercion {
 
 struct resultado_busqueda {
     int cantidad_usuarios;
-    std::string clave;
-    std::string tipo_busqueda;
+    string clave;
+    string tipo_busqueda;
     double tiempo_ns;
 };
 
