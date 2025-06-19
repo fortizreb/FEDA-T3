@@ -1,5 +1,6 @@
 #include "arboles.h"
 #include "usuario.h"
+#include "utilitarios.h"
 using namespace std;
 
 #include <iostream>
@@ -15,9 +16,6 @@ using namespace std;
 #include <algorithm>
 
 extern int LIMITE_USUARIOS;
-
-void exportar_resultados_insercion_csv(const vector<resultado_insercion>& grilla_id, const vector<resultado_insercion>& grilla_nombre); // exporta inserciones a CSV
-void exportar_resultados_busqueda_csv(const vector<resultado_busqueda>& resultados); // exporta búsquedas a CSV
 
 // Funciones de inserción y búsqueda en BST:
 void busqueda_bst(const arbol_binario_id& bst_id, const arbol_binario_nombre& bst_nombre, const vector<Usuario>& usuarios_validos); // ejecuta búsquedas en ambos árboles

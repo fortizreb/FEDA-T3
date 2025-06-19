@@ -1,4 +1,5 @@
 #include "arboles.h"
+#include "utilitarios.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -15,16 +16,6 @@
 using namespace std;
 
 int LIMITE_USUARIOS = 10000;
-
-// Prototipos globales para todo el proyecto
-void imprimir_grilla_insercion(const vector<resultado_insercion>& grilla, const string& titulo, int total_filas, double tiempo_lectura, double tiempo_insercion);
-void imprimir_grilla_busqueda(const vector<resultado_busqueda>& resultados);
-void exportar_resultados_insercion_csv(const vector<resultado_insercion>& grilla_id, const vector<resultado_insercion>& grilla_nombre);
-void exportar_resultados_busqueda_csv(const vector<resultado_busqueda>& resultados);
-void busqueda_bst(const arbol_binario_id& bst_id, const arbol_binario_nombre& bst_nombre, const vector<Usuario>& usuarios_validos);
-vector<Usuario> leer_usuarios_validos_csv(const string& archivo);
-void insertar_bst_id(arbol_binario_id& arbol, const string& archivo, vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
-void insertar_bst_nombre(arbol_binario_nombre& arbol, const string& archivo, vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
 
 int main() {
     auto inicio_total_insercion = chrono::high_resolution_clock::now();
