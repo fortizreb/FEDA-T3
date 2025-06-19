@@ -1,74 +1,43 @@
+#include "arboles.h"
 #include "usuario.h"
-#include <iostream>
-#include <fstream>
-#include <string>
-#include <vector>
-#include <functional>
-#include <chrono>
-#include <iomanip>
-#include <optional>
-#include <list>
-#include <sstream>
-#include <algorithm>
+using namespace std;
 
-class nodo_arbol_id {
-public:
-    Usuario usuario;
-    nodo_arbol_id* izquierdo;
-    nodo_arbol_id* derecho;
-    nodo_arbol_id(const Usuario& usuario) : usuario(usuario), izquierdo(nullptr), derecho(nullptr) {}
-};
+// constructor del nodo, inserta al usuario y deja hijos en null
+nodo_arbol_id::nodo_arbol_id(const Usuario& usuario) : usuario(usuario), izquierdo(nullptr), derecho(nullptr) {}
 
-class arbol_binario_id {
-public:
-    nodo_arbol_id* raiz;
-    arbol_binario_id() : raiz(nullptr) {}
-    void insertar(const Usuario& usuario);
-    bool buscar_por_id(long long id) const;
-    Usuario* buscar_usuario_por_id(long long id);
-    void imprimir_primeros_n(int n);
-    Usuario* buscar_usuario(std::function<bool(const Usuario&)> criterio);
-private:
-    nodo_arbol_id* insertar_rec(nodo_arbol_id* nodo, const Usuario& usuario);
-    bool buscar_por_id_rec(nodo_arbol_id* nodo, long long id) const;
-    Usuario* buscar_usuario_por_id_rec(nodo_arbol_id* nodo, long long id);
-    void imprimir_primeros_n_rec(nodo_arbol_id* nodo, int& contador, int n);
-    Usuario* buscar_usuario_rec(nodo_arbol_id* nodo, std::function<bool(const Usuario&)> criterio);
-};
+// constructor del árbol, parte vacio
+arbol_binario_id::arbol_binario_id() : raiz(nullptr) {}
 
-class nodo_arbol_nombre {
-public:
-    Usuario usuario;
-    nodo_arbol_nombre* izquierdo;
-    nodo_arbol_nombre* derecho;
-    nodo_arbol_nombre(const Usuario& usuario) : usuario(usuario), izquierdo(nullptr), derecho(nullptr) {}
-};
+// busca si existe un id en el árbol 
+bool arbol_binario_id::buscar_por_id(long long id) const {
+    return buscar_por_id_rec(raiz, id);
+}
 
-class arbol_binario_nombre {
-public:
-    nodo_arbol_nombre* raiz;
-    arbol_binario_nombre() : raiz(nullptr) {}
-    void insertar(const Usuario& usuario);
-    bool buscar_por_nombre(const std::string& nombre_usuario) const;
-    Usuario* buscar_usuario_por_nombre(const std::string& nombre_usuario);
-    void imprimir_primeros_n(int n);
-    Usuario* buscar_usuario(std::function<bool(const Usuario&)> criterio);
-private:
-    nodo_arbol_nombre* insertar_rec(nodo_arbol_nombre* nodo, const Usuario& usuario);
-    bool buscar_por_nombre_rec(nodo_arbol_nombre* nodo, const std::string& nombre_usuario) const;
-    Usuario* buscar_usuario_por_nombre_rec(nodo_arbol_nombre* nodo, const std::string& nombre_usuario);
-    void imprimir_primeros_n_rec(nodo_arbol_nombre* nodo, int& contador, int n);
-    Usuario* buscar_usuario_rec(nodo_arbol_nombre* nodo, std::function<bool(const Usuario&)> criterio);
-};
+// funcion recursiva para buscar id, va bajando por el arbol
+bool arbol_binario_id::buscar_por_id_rec(nodo_arbol_id* nodo, long long id) const {
+    if (!nodo) return false; // si no hay nodo, no esta
+    if (id == nodo->usuario.id) return true; // lo encontro
+    if (id < nodo->usuario.id) return buscar_por_id_rec(nodo->izquierdo, id); // va izq
+    return buscar_por_id_rec(nodo->derecho, id); // va der
+}
 
-extern int LIMITE_USUARIOS;
+// inserta un usuario al arbol 
+void arbol_binario_id::insertar(const Usuario& usuario) {
+    raiz = insertar_rec(raiz, usuario);
+}
 
-// Prototipos globales para todo el proyecto
-void imprimir_grilla_insercion(const std::vector<resultado_insercion>& grilla, const std::string& titulo, int total_filas, double tiempo_lectura, double tiempo_insercion);
-void imprimir_grilla_busqueda(const std::vector<resultado_busqueda>& resultados);
-void exportar_resultados_insercion_csv(const std::vector<resultado_insercion>& grilla_id, const std::vector<resultado_insercion>& grilla_nombre);
-void exportar_resultados_busqueda_csv(const std::vector<resultado_busqueda>& resultados);
-void busqueda_bst(const arbol_binario_id& bst_id, const arbol_binario_nombre& bst_nombre, const std::vector<Usuario>& usuarios_validos);
-std::vector<Usuario> leer_usuarios_validos_csv(const std::string& archivo);
-void insertar_bst_id(arbol_binario_id& arbol, const std::string& archivo, std::vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
-void insertar_bst_nombre(arbol_binario_nombre& arbol, const std::string& archivo, std::vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
+/*
+Esta función la saqué (adapté) del laboratorio que hizo Víctor sobre árboles BST.
+Básicamente hace lo mismo que el ejemplo de él: si el nodo está vacío, crea uno nuevo con el usuario.
+Si el id del usuario es menor, baja por la izquierda; si es mayor, baja por la derecha.
+Así el árbol queda ordenado por id. Es el mismo algoritmo que mostró Víctor, solo que aquí es con usuarios
+*/
+nodo_arbol_id* arbol_binario_id::insertar_rec(nodo_arbol_id* nodo, const Usuario& usuario) {
+    if (!nodo) return new nodo_arbol_id(usuario); // si no hay nodo, crea uno
+    if (usuario.id < nodo->usuario.id) {
+        nodo->izquierdo = insertar_rec(nodo->izquierdo, usuario); // va izq
+    } else if (usuario.id > nodo->usuario.id) {
+        nodo->derecho = insertar_rec(nodo->derecho, usuario); // va der
+    }
+    return nodo; // retorna el nodo (ya sea nuevo o modificado)
+}

@@ -1,3 +1,4 @@
+#include "arboles.h"
 #include "usuario.h"
 #include <iostream>
 #include <fstream>
@@ -10,48 +11,9 @@
 #include <list>
 #include <sstream>
 #include <algorithm>
+#include <ctime>
 #include <random>
 using namespace std;
-
-// Definiciones necesarias para autocontenibilidad
-
-class nodo_arbol_id {
-public:
-    Usuario usuario;
-    nodo_arbol_id* izquierdo;
-    nodo_arbol_id* derecho;
-    nodo_arbol_id(const Usuario& usuario) : usuario(usuario), izquierdo(nullptr), derecho(nullptr) {}
-};
-
-class arbol_binario_id {
-public:
-    nodo_arbol_id* raiz;
-    arbol_binario_id() : raiz(nullptr) {}
-    void insertar(const Usuario& usuario);
-    bool buscar_por_id(long long id) const;
-private:
-    nodo_arbol_id* insertar_rec(nodo_arbol_id* nodo, const Usuario& usuario);
-    bool buscar_por_id_rec(nodo_arbol_id* nodo, long long id) const;
-};
-
-class nodo_arbol_nombre {
-public:
-    Usuario usuario;
-    nodo_arbol_nombre* izquierdo;
-    nodo_arbol_nombre* derecho;
-    nodo_arbol_nombre(const Usuario& usuario) : usuario(usuario), izquierdo(nullptr), derecho(nullptr) {}
-};
-
-class arbol_binario_nombre {
-public:
-    nodo_arbol_nombre* raiz;
-    arbol_binario_nombre() : raiz(nullptr) {}
-    void insertar(const Usuario& usuario);
-    bool buscar_por_nombre(const string& nombre_usuario) const;
-private:
-    nodo_arbol_nombre* insertar_rec(nodo_arbol_nombre* nodo, const Usuario& usuario);
-    bool buscar_por_nombre_rec(nodo_arbol_nombre* nodo, const string& nombre_usuario) const;
-};
 
 extern int LIMITE_USUARIOS;
 
@@ -210,27 +172,4 @@ void insertar_bst_id(arbol_binario_id& bst, const string& archivo, vector<result
     tiempo_insercion = chrono::duration<double>(chrono::high_resolution_clock::now() - inicio_insercion).count();
 }
 
-bool arbol_binario_id::buscar_por_id(long long id) const {
-    return buscar_por_id_rec(raiz, id);
-}
-
-bool arbol_binario_id::buscar_por_id_rec(nodo_arbol_id* nodo, long long id) const {
-    if (!nodo) return false;
-    if (id == nodo->usuario.id) return true;
-    if (id < nodo->usuario.id) return buscar_por_id_rec(nodo->izquierdo, id);
-    return buscar_por_id_rec(nodo->derecho, id);
-}
-
-void arbol_binario_id::insertar(const Usuario& usuario) {
-    raiz = insertar_rec(raiz, usuario);
-}
-
-nodo_arbol_id* arbol_binario_id::insertar_rec(nodo_arbol_id* nodo, const Usuario& usuario) {
-    if (!nodo) return new nodo_arbol_id(usuario);
-    if (usuario.id < nodo->usuario.id) {
-        nodo->izquierdo = insertar_rec(nodo->izquierdo, usuario);
-    } else if (usuario.id > nodo->usuario.id) {
-        nodo->derecho = insertar_rec(nodo->derecho, usuario);
-    }
-    return nodo;
-}
+// Implementaciones de arbol_binario_id movidas a arbol_binario_id.cpp

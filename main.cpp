@@ -1,3 +1,4 @@
+#include "arboles.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -9,103 +10,21 @@
 #include <list>
 #include <sstream>
 #include <algorithm>
+#include "usuario.h"
 
-struct Usuario {
-    long long id;
-    std::string screen_name;
-    std::vector<std::string> tags;
-    std::string avatar;
-    int followers_count;
-    int friends_count;
-    std::string lang;
-    long long last_seen;
-    long long tweet_id;
-    std::vector<long long> friends;
-};
-
-struct resultado_insercion {
-    std::string estructura_datos;
-    std::string operacion;
-    std::string objetivo;
-    int cantidad_nodos;
-    double segundos;
-    long long milisegundos;
-    long long microsegundos;
-    long long nanosegundos;
-};
-
-struct resultado_busqueda {
-    int cantidad_usuarios;
-    std::string clave;
-    std::string tipo_busqueda;
-    double tiempo_ns;
-};
-
-class nodo_arbol_id {
-public:
-    Usuario usuario;
-    nodo_arbol_id* izquierdo;
-    nodo_arbol_id* derecho;
-    nodo_arbol_id(const Usuario& usuario) : usuario(usuario), izquierdo(nullptr), derecho(nullptr) {}
-};
-
-class arbol_binario_id {
-public:
-    nodo_arbol_id* raiz;
-    arbol_binario_id() : raiz(nullptr) {}
-    void insertar(const Usuario& usuario);
-    bool buscar_por_id(long long id) const;
-    Usuario* buscar_usuario_por_id(long long id);
-    void imprimir_primeros_n(int n);
-    Usuario* buscar_usuario(std::function<bool(const Usuario&)> criterio);
-private:
-    nodo_arbol_id* insertar_rec(nodo_arbol_id* nodo, const Usuario& usuario);
-    bool buscar_por_id_rec(nodo_arbol_id* nodo, long long id) const;
-    Usuario* buscar_usuario_por_id_rec(nodo_arbol_id* nodo, long long id);
-    void imprimir_primeros_n_rec(nodo_arbol_id* nodo, int& contador, int n);
-    Usuario* buscar_usuario_rec(nodo_arbol_id* nodo, std::function<bool(const Usuario&)> criterio);
-};
-
-class nodo_arbol_nombre {
-public:
-    Usuario usuario;
-    nodo_arbol_nombre* izquierdo;
-    nodo_arbol_nombre* derecho;
-    nodo_arbol_nombre(const Usuario& usuario) : usuario(usuario), izquierdo(nullptr), derecho(nullptr) {}
-};
-
-class arbol_binario_nombre {
-public:
-    nodo_arbol_nombre* raiz;
-    arbol_binario_nombre() : raiz(nullptr) {}
-    void insertar(const Usuario& usuario);
-    bool buscar_por_nombre(const std::string& nombre_usuario) const;
-    Usuario* buscar_usuario_por_nombre(const std::string& nombre_usuario);
-    void imprimir_primeros_n(int n);
-    Usuario* buscar_usuario(std::function<bool(const Usuario&)> criterio);
-private:
-    nodo_arbol_nombre* insertar_rec(nodo_arbol_nombre* nodo, const Usuario& usuario);
-    bool buscar_por_nombre_rec(nodo_arbol_nombre* nodo, const std::string& nombre_usuario) const;
-    Usuario* buscar_usuario_por_nombre_rec(nodo_arbol_nombre* nodo, const std::string& nombre_usuario);
-    void imprimir_primeros_n_rec(nodo_arbol_nombre* nodo, int& contador, int n);
-    Usuario* buscar_usuario_rec(nodo_arbol_nombre* nodo, std::function<bool(const Usuario&)> criterio);
-};
-
-
+using namespace std;
 
 int LIMITE_USUARIOS = 10000;
 
 // Prototipos globales para todo el proyecto
-void imprimir_grilla_insercion(const std::vector<resultado_insercion>& grilla, const std::string& titulo, int total_filas, double tiempo_lectura, double tiempo_insercion);
-void imprimir_grilla_busqueda(const std::vector<resultado_busqueda>& resultados);
-void exportar_resultados_insercion_csv(const std::vector<resultado_insercion>& grilla_id, const std::vector<resultado_insercion>& grilla_nombre);
-void exportar_resultados_busqueda_csv(const std::vector<resultado_busqueda>& resultados);
-void busqueda_bst(const arbol_binario_id& bst_id, const arbol_binario_nombre& bst_nombre, const std::vector<Usuario>& usuarios_validos);
-std::vector<Usuario> leer_usuarios_validos_csv(const std::string& archivo);
-void insertar_bst_id(arbol_binario_id& arbol, const std::string& archivo, std::vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
-void insertar_bst_nombre(arbol_binario_nombre& arbol, const std::string& archivo, std::vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
-
-using namespace std;
+void imprimir_grilla_insercion(const vector<resultado_insercion>& grilla, const string& titulo, int total_filas, double tiempo_lectura, double tiempo_insercion);
+void imprimir_grilla_busqueda(const vector<resultado_busqueda>& resultados);
+void exportar_resultados_insercion_csv(const vector<resultado_insercion>& grilla_id, const vector<resultado_insercion>& grilla_nombre);
+void exportar_resultados_busqueda_csv(const vector<resultado_busqueda>& resultados);
+void busqueda_bst(const arbol_binario_id& bst_id, const arbol_binario_nombre& bst_nombre, const vector<Usuario>& usuarios_validos);
+vector<Usuario> leer_usuarios_validos_csv(const string& archivo);
+void insertar_bst_id(arbol_binario_id& arbol, const string& archivo, vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
+void insertar_bst_nombre(arbol_binario_nombre& arbol, const string& archivo, vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);
 
 int main() {
     auto inicio_total_insercion = chrono::high_resolution_clock::now();
