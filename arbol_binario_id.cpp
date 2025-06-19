@@ -1,3 +1,4 @@
+#include "usuario.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -9,37 +10,6 @@
 #include <list>
 #include <sstream>
 #include <algorithm>
-
-struct Usuario {
-    long long id;
-    std::string screen_name;
-    std::vector<std::string> tags;
-    std::string avatar;
-    int followers_count;
-    int friends_count;
-    std::string lang;
-    long long last_seen;
-    long long tweet_id;
-    std::vector<long long> friends;
-};
-
-struct resultado_insercion {
-    std::string estructura_datos;
-    std::string operacion;
-    std::string objetivo;
-    int cantidad_nodos;
-    double segundos;
-    long long milisegundos;
-    long long microsegundos;
-    long long nanosegundos;
-};
-
-struct resultado_busqueda {
-    int cantidad_usuarios;
-    std::string clave;
-    std::string tipo_busqueda;
-    double tiempo_ns;
-};
 
 class nodo_arbol_id {
 public:
@@ -89,71 +59,6 @@ private:
     Usuario* buscar_usuario_por_nombre_rec(nodo_arbol_nombre* nodo, const std::string& nombre_usuario);
     void imprimir_primeros_n_rec(nodo_arbol_nombre* nodo, int& contador, int n);
     Usuario* buscar_usuario_rec(nodo_arbol_nombre* nodo, std::function<bool(const Usuario&)> criterio);
-};
-
-class HashAbierto {
-public:
-    std::vector<std::list<Usuario>> tabla;
-    size_t tamano_tabla;
-    HashAbierto(size_t tamano) {
-        tamano_tabla = tamano;
-        tabla = std::vector<std::list<Usuario>>(tamano_tabla);
-    }
-    void insertar(const Usuario& usuario) {
-        size_t indice = std::hash<long long>{}(usuario.id) % tamano_tabla;
-        tabla[indice].push_back(usuario);
-    }
-    bool buscar_por_id(long long id) {
-        size_t indice = std::hash<long long>{}(id) % tamano_tabla;
-        for (const auto& usuario : tabla[indice]) {
-            if (usuario.id == id) return true;
-        }
-        return false;
-    }
-    bool buscar_por_nombre(const std::string& nombre_usuario) {
-        size_t indice = std::hash<std::string>{}(nombre_usuario) % tamano_tabla;
-        for (const auto& usuario : tabla[indice]) {
-            if (usuario.screen_name == nombre_usuario) return true;
-        }
-        return false;
-    }
-};
-
-class HashCerrado {
-public:
-    std::vector<std::optional<Usuario>> tabla;
-    size_t tamano_tabla;
-    HashCerrado(size_t tamano) {
-        tamano_tabla = tamano;
-        tabla = std::vector<std::optional<Usuario>>(tamano_tabla);
-    }
-    void insertar(const Usuario& usuario) {
-        size_t indice = std::hash<long long>{}(usuario.id) % tamano_tabla;
-        while (tabla[indice].has_value()) {
-            indice = (indice + 1) % tamano_tabla;
-        }
-        tabla[indice] = usuario;
-    }
-    bool buscar_por_id(long long id) {
-        size_t indice = std::hash<long long>{}(id) % tamano_tabla;
-        size_t inicio = indice;
-        while (tabla[indice].has_value()) {
-            if (tabla[indice]->id == id) return true;
-            indice = (indice + 1) % tamano_tabla;
-            if (indice == inicio) break;
-        }
-        return false;
-    }
-    bool buscar_por_nombre(const std::string& nombre_usuario) {
-        size_t indice = std::hash<std::string>{}(nombre_usuario) % tamano_tabla;
-        size_t inicio = indice;
-        while (tabla[indice].has_value()) {
-            if (tabla[indice]->screen_name == nombre_usuario) return true;
-            indice = (indice + 1) % tamano_tabla;
-            if (indice == inicio) break;
-        }
-        return false;
-    }
 };
 
 extern int LIMITE_USUARIOS;

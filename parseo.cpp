@@ -266,7 +266,7 @@ std::vector<Usuario> leer_usuarios_validos_csv(const std::string& archivo) {
         if (campos.size() < 10) continue;
         Usuario usuario = parsear_usuario(campos);
         if (usuario.id > 0 && !usuario.screen_name.empty()) usuarios_validos.push_back(usuario);
-        if (usuarios_validos.size() >= LIMITE_USUARIOS) break;
+        if (static_cast<int>(usuarios_validos.size()) >= LIMITE_USUARIOS) break;
     }
     return usuarios_validos;
 }

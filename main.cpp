@@ -91,72 +91,9 @@ private:
     Usuario* buscar_usuario_rec(nodo_arbol_nombre* nodo, std::function<bool(const Usuario&)> criterio);
 };
 
-class HashAbierto {
-public:
-    std::vector<std::list<Usuario>> tabla;
-    size_t tamano_tabla;
-    HashAbierto(size_t tamano) {
-        tamano_tabla = tamano;
-        tabla = std::vector<std::list<Usuario>>(tamano_tabla);
-    }
-    void insertar(const Usuario& usuario) {
-        size_t indice = std::hash<long long>{}(usuario.id) % tamano_tabla;
-        tabla[indice].push_back(usuario);
-    }
-    bool buscar_por_id(long long id) {
-        size_t indice = std::hash<long long>{}(id) % tamano_tabla;
-        for (const auto& usuario : tabla[indice]) {
-            if (usuario.id == id) return true;
-        }
-        return false;
-    }
-    bool buscar_por_nombre(const std::string& nombre_usuario) {
-        size_t indice = std::hash<std::string>{}(nombre_usuario) % tamano_tabla;
-        for (const auto& usuario : tabla[indice]) {
-            if (usuario.screen_name == nombre_usuario) return true;
-        }
-        return false;
-    }
-};
 
-class HashCerrado {
-public:
-    std::vector<std::optional<Usuario>> tabla;
-    size_t tamano_tabla;
-    HashCerrado(size_t tamano) {
-        tamano_tabla = tamano;
-        tabla = std::vector<std::optional<Usuario>>(tamano_tabla);
-    }
-    void insertar(const Usuario& usuario) {
-        size_t indice = std::hash<long long>{}(usuario.id) % tamano_tabla;
-        while (tabla[indice].has_value()) {
-            indice = (indice + 1) % tamano_tabla;
-        }
-        tabla[indice] = usuario;
-    }
-    bool buscar_por_id(long long id) {
-        size_t indice = std::hash<long long>{}(id) % tamano_tabla;
-        size_t inicio = indice;
-        while (tabla[indice].has_value()) {
-            if (tabla[indice]->id == id) return true;
-            indice = (indice + 1) % tamano_tabla;
-            if (indice == inicio) break;
-        }
-        return false;
-    }
-    bool buscar_por_nombre(const std::string& nombre_usuario) {
-        size_t indice = std::hash<std::string>{}(nombre_usuario) % tamano_tabla;
-        size_t inicio = indice;
-        while (tabla[indice].has_value()) {
-            if (tabla[indice]->screen_name == nombre_usuario) return true;
-            indice = (indice + 1) % tamano_tabla;
-            if (indice == inicio) break;
-        }
-        return false;
-    }
-};
 
-int LIMITE_USUARIOS = 20000;
+int LIMITE_USUARIOS = 10000;
 
 // Prototipos globales para todo el proyecto
 void imprimir_grilla_insercion(const std::vector<resultado_insercion>& grilla, const std::string& titulo, int total_filas, double tiempo_lectura, double tiempo_insercion);
@@ -171,39 +108,34 @@ void insertar_bst_nombre(arbol_binario_nombre& arbol, const std::string& archivo
 using namespace std;
 
 int main() {
-    auto inicio_total = chrono::high_resolution_clock::now();
+    auto inicio_total_insercion = chrono::high_resolution_clock::now();
     arbol_binario_id bst_id;
     vector<resultado_insercion> grilla_id;
     arbol_binario_nombre bst_nombre;
     vector<resultado_insercion> grilla_nombre;
     double tiempo_lectura_id = 0, tiempo_insercion_id = 0;
     double tiempo_lectura_nombre = 0, tiempo_insercion_nombre = 0;
-    while (true) {
-        cout << "\n===== MENÚ PRINCIPAL =====" << endl;
-        cout << "1. Cargar e insertar datos en BST por ID y NOMBRE" << endl;
-        cout << "2. Salir" << endl;
-        cout << "Seleccione una opción: ";
-        int opcion;
-        cin >> opcion;
-        if (opcion == 1) {
-            cout << "Cargando datos en BST por ID..." << endl;
-            insertar_bst_id(bst_id, "data.csv", grilla_id, tiempo_lectura_id, tiempo_insercion_id);
-            imprimir_grilla_insercion(grilla_id, "INSERCIÓN BST POR ID:", grilla_id.empty() ? 0 : grilla_id.back().cantidad_nodos, tiempo_lectura_id, tiempo_insercion_id);
-            cout << "\n\n";
-            cout << "Cargando datos en BST por NOMBRE..." << endl;
-            insertar_bst_nombre(bst_nombre, "data.csv", grilla_nombre, tiempo_lectura_nombre, tiempo_insercion_nombre);
-            imprimir_grilla_insercion(grilla_nombre, "INSERCIÓN BST POR NOMBRE:", grilla_nombre.empty() ? 0 : grilla_nombre.back().cantidad_nodos, tiempo_lectura_nombre, tiempo_insercion_nombre);
-            auto fin_total = chrono::high_resolution_clock::now();
-            cout << "\nTotal inserción: [" << fixed << setprecision(3) << chrono::duration<double>(fin_total - inicio_total).count() << " segundos]" << endl;
-            exportar_resultados_insercion_csv(grilla_id, grilla_nombre); //guardamos resultados en archivo.
-            cout << "\nBuscando en BST por ID por NOMBRE..." << endl;
-            vector<Usuario> usuarios_validos = leer_usuarios_validos_csv("data.csv"); 
-            busqueda_bst(bst_id, bst_nombre, usuarios_validos);
-        } else if (opcion == 2) {
-            break;
-        } else {
-            cout << "Opción no válida. Intente de nuevo." << endl;
-        }
-    }
+
+
+    /******** INSERCIÓN EN BST POR NOMBRE E ID **********/  
+    cout << "\n********[INSERCIÓN BST]********" << endl;
+    cout << "Cargando datos en BST por ID..." << endl;
+    insertar_bst_id(bst_id, "data.csv", grilla_id, tiempo_lectura_id, tiempo_insercion_id);
+    cout << "Cargando datos en BST por NOMBRE..." << endl;
+    insertar_bst_nombre(bst_nombre, "data.csv", grilla_nombre, tiempo_lectura_nombre, tiempo_insercion_nombre);
+    auto fin_total_insercion = chrono::high_resolution_clock::now();
+    cout << "\nTotal inserción: [" << fixed << setprecision(3) << chrono::duration<double>(fin_total_insercion - inicio_total_insercion).count() << " segundos]" << endl;
+    exportar_resultados_insercion_csv(grilla_id, grilla_nombre); //guardamos resultados en archivo.
+
+    /******** BÚSQUEDA EN BST POR NOMBRE E ID **********/
+    cout << "\n********[BÚSQUEDA BST]********" << endl;
+    auto inicio_total_busqueda = chrono::high_resolution_clock::now();
+    cout << "Buscando en BST por ID y por NOMBRE..." << endl;
+    vector<Usuario> usuarios_validos = leer_usuarios_validos_csv("data.csv"); 
+    busqueda_bst(bst_id, bst_nombre, usuarios_validos);
+    auto fin_total_busqueda = chrono::high_resolution_clock::now();
+    cout << "\nTotal búsqeuda: [" << fixed << setprecision(3) << chrono::duration<double>(fin_total_busqueda - inicio_total_busqueda).count() << " segundos]" << endl;
+
+        
     return 0;
 }
