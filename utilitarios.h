@@ -11,6 +11,8 @@ using namespace std;
 void exportar_resultados_insercion_csv(const vector<resultado_insercion>& grilla_id, const vector<resultado_insercion>& grilla_nombre);
 // Exporta los resultados de búsqueda a un archivo CSV
 void exportar_resultados_busqueda_csv(const vector<resultado_busqueda>& resultados);
+// Exporta resultados de inserción o búsqueda con prefijo personalizado y tipo (para bst y hash, con variante opcional)
+void exportar_resultados_csv(const std::vector<resultado_insercion>& resultados, const std::string& estructura, const std::string& tipo, const std::string& variante = "");
 
 // Hace búsquedas en ambos árboles (por id y por nombre) y guarda los resultados
 void busqueda_bst(const arbol_binario_id& bst_id, const arbol_binario_nombre& bst_nombre, const vector<Usuario>& usuarios_validos);

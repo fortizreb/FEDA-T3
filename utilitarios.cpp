@@ -184,3 +184,29 @@ void insertar_bst_id(arbol_binario_id& bst, const string& archivo, vector<result
     }
     tiempo_insercion = chrono::duration<double>(chrono::high_resolution_clock::now() - inicio_insercion).count();
 }
+
+/*
+Exporta resultados de inserción a un archivo CSV.
+Ahora con variante opcional para el nombre del archivo.
+*/
+void exportar_resultados_csv(const std::vector<resultado_insercion>& resultados, const std::string& estructura, const std::string& tipo, const std::string& variante) {
+    std::filesystem::create_directories("resultados");
+    time_t ahora = time(nullptr);
+    tm* local = localtime(&ahora);
+    std::string nombre = tipo + "_" + estructura;
+    if (!variante.empty()) nombre += "_" + variante;
+    char buffer[128];
+    strftime(buffer, sizeof(buffer), (nombre + "_%H-%M-%S_(%d-%b).csv").c_str(), local);
+    std::string ruta = "resultados/" + std::string(buffer);
+    std::ofstream archivo(ruta);
+    if (!archivo.is_open()) {
+        std::cout << "No se pudo crear el archivo: " << ruta << std::endl;
+        return;
+    }
+    archivo << "n_usuarios,clave,tiempo_ms\n";
+    for (const auto& r : resultados) {
+        archivo << r.cantidad_nodos << "," << r.objetivo << "," << std::fixed << std::setprecision(1) << (double)r.milisegundos << "\n";
+    }
+    archivo.close();
+    std::cout << "Resultados de " << tipo << " (" << estructura << (variante.empty() ? "" : ", " + variante) << ") exportados a '" << ruta << "'" << std::endl;
+}
