@@ -4,7 +4,7 @@
 #include <vector>
 #include <optional>
 #include <string>
-#include "usuario.h"
+#include "utilidades/usuario.h"
 
 class HashCerrado {
 public:

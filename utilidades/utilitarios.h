@@ -1,8 +1,10 @@
 #ifndef UTILITARIOS_H
 #define UTILITARIOS_H
 
-#include "arboles.h"
-#include "usuario.h"
+#include "arbol/arboles.h"
+#include "utilidades/usuario.h"
+#include "hash/hash_abierto.h"
+#include "hash/hash_cerrado.h"
 #include <vector>
 #include <string>
 using namespace std;

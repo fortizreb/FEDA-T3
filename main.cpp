@@ -1,5 +1,6 @@
-#include "arboles.h"
-#include "utilitarios.h"
+#include "arbol/arboles.h"
+#include "utilidades/utilitarios.h"
+#include "utilidades/usuario.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -11,14 +12,13 @@
 #include <list>
 #include <sstream>
 #include <algorithm>
-#include "usuario.h"
-#include "hash_abierto.h"
-#include "hash_cerrado.h"
+#include "hash/hash_abierto.h"
+#include "hash/hash_cerrado.h"
 #include <filesystem>
 
 using namespace std;
 
-int LIMITE_USUARIOS = 40000;
+int LIMITE_USUARIOS = 10000;
 
 int main() {
     // Limpiar carpeta resultados al inicio

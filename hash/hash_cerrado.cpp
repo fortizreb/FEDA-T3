@@ -1,3 +1,4 @@
+#include "hash_cerrado.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -9,7 +10,6 @@
 #include <list>
 #include <sstream>
 #include <algorithm>
-#include "hash_cerrado.h"
 
 // Implementación de HashCerrado fuera de la clase
 HashCerrado::HashCerrado(size_t tamano) {

@@ -1,5 +1,5 @@
 #include "usuario.h"
-#include "arboles.h"
+#include "arbol/arboles.h"
 #include "utilitarios.h"
 #include <iostream>
 #include <fstream>

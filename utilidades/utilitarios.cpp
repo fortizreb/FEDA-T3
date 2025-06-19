@@ -1,4 +1,4 @@
-#include "arboles.h"
+#include "arbol/arboles.h"
 #include "usuario.h"
 #include <iostream>
 #include <fstream>

@@ -1,6 +1,6 @@
 CXX = g++
-CXXFLAGS = -Wall -std=c++17
-SRC = main.cpp arbol_binario_id.cpp arbol_binario_nombre.cpp parseo.cpp utilitarios.cpp hash_abierto.cpp hash_cerrado.cpp
+CXXFLAGS = -Wall -std=c++17 -I. -Iutilidades
+SRC = main.cpp arbol/arbol_binario_id.cpp arbol/arbol_binario_nombre.cpp parseo.cpp utilidades/utilitarios.cpp hash/hash_abierto.cpp hash/hash_cerrado.cpp
 TARGET = test
 
 all: $(TARGET)

@@ -14,9 +14,9 @@ ruta_salida = "./imagenes"
 os.makedirs(ruta_salida, exist_ok=True)
 
 # Eliminar imágenes antiguas
-#for archivo in os.listdir(ruta_salida):
-#    if archivo.endswith(".png"):
-#        os.remove(os.path.join(ruta_salida, archivo))
+for archivo in os.listdir(ruta_salida):
+    if archivo.endswith(".png"):
+        os.remove(os.path.join(ruta_salida, archivo))
 
 
 # === Inserción ===

@@ -4,7 +4,7 @@
 #include <vector>
 #include <list>
 #include <string>
-#include "usuario.h"
+#include "utilidades/usuario.h"
 
 class HashAbierto {
 public:

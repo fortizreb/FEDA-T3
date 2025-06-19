@@ -1,3 +1,4 @@
+#include "hash_abierto.h"
 #include <iostream>
 #include <fstream>
 #include <string>
@@ -9,8 +10,6 @@
 #include <list>
 #include <sstream>
 #include <algorithm>
-#include "hash_abierto.h"
-
 using namespace std;
 
 // Implementación de HashAbierto fuera de la clase

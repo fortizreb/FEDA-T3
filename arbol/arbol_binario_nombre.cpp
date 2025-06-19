@@ -134,5 +134,5 @@ void insertar_bst_nombre(arbol_binario_nombre& bst, const string& archivo, std::
 // Constructor del nodo, inserta el usuario y deja hijos en null
 nodo_arbol_nombre::nodo_arbol_nombre(const Usuario& usuario) : usuario(usuario), izquierdo(nullptr), derecho(nullptr) {}
 
-// Constructor del árbol, parte vacío
+// Constructor del árbol, parte vacio
 arbol_binario_nombre::arbol_binario_nombre() : raiz(nullptr) {}
