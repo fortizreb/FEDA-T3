@@ -211,26 +211,120 @@ void exportar_resultados_csv(const std::vector<resultado_insercion>& resultados,
     std::cout << "Resultados de " << tipo << " (" << estructura << (variante.empty() ? "" : ", " + variante) << ") exportados a '" << ruta << "'" << std::endl;
 }
 
-// Inserta usuarios en hash abierto y mide tiempos
+// Inserta usuarios en hash abierto y mide tiempos cada 5000, por id y por nombre
 void insertar_hash_abierto(HashAbierto& hash, const std::vector<Usuario>& usuarios, std::vector<resultado_insercion>& grilla, double& tiempo_insercion) {
     auto inicio = std::chrono::high_resolution_clock::now();
-    for (const auto& usuario : usuarios) {
-        hash.insertar(usuario);
+    int idx = 0;
+    int max_registros = usuarios.size();
+    // Inserción por id
+    for (int n = 0; n <= max_registros; n += 5000) {
+        if (n == 0) {
+            auto fin = std::chrono::high_resolution_clock::now();
+            auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+            grilla.push_back({"HashAbierto", "insercion", "id", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+            continue;
+        }
+        for (; idx < n && idx < max_registros; ++idx) {
+            hash.insertar(usuarios[idx]);
+        }
+        auto fin = std::chrono::high_resolution_clock::now();
+        auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+        grilla.push_back({"HashAbierto", "insercion", "id", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+    }
+    if (idx < max_registros) {
+        for (; idx < max_registros; ++idx) {
+            hash.insertar(usuarios[idx]);
+        }
+        auto fin = std::chrono::high_resolution_clock::now();
+        auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+        grilla.push_back({"HashAbierto", "insercion", "id", max_registros, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+    }
+    // Inserción por nombre
+    HashAbierto hash_nombre(hash.tamano_tabla);
+    idx = 0;
+    auto inicio_nombre = std::chrono::high_resolution_clock::now();
+    for (int n = 0; n <= max_registros; n += 5000) {
+        if (n == 0) {
+            auto fin = std::chrono::high_resolution_clock::now();
+            auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio_nombre);
+            grilla.push_back({"HashAbierto", "insercion", "screenName", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+            continue;
+        }
+        for (; idx < n && idx < max_registros; ++idx) {
+            hash_nombre.insertar(usuarios[idx]);
+        }
+        auto fin = std::chrono::high_resolution_clock::now();
+        auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio_nombre);
+        grilla.push_back({"HashAbierto", "insercion", "screenName", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+    }
+    if (idx < max_registros) {
+        for (; idx < max_registros; ++idx) {
+            hash_nombre.insertar(usuarios[idx]);
+        }
+        auto fin = std::chrono::high_resolution_clock::now();
+        auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio_nombre);
+        grilla.push_back({"HashAbierto", "insercion", "screenName", max_registros, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
     }
     auto fin = std::chrono::high_resolution_clock::now();
     tiempo_insercion = std::chrono::duration<double>(fin - inicio).count();
-    grilla.push_back({"HashAbierto", "insercion", "id", (int)usuarios.size(), tiempo_insercion, (long long)(tiempo_insercion*1000), (long long)(tiempo_insercion*1000000), (long long)(tiempo_insercion*1000000000)});
 }
 
-// Inserta usuarios en hash cerrado y mide tiempos
+// Inserta usuarios en hash cerrado y mide tiempos cada 5000, por id y por nombre
 void insertar_hash_cerrado(HashCerrado& hash, const std::vector<Usuario>& usuarios, std::vector<resultado_insercion>& grilla, double& tiempo_insercion) {
     auto inicio = std::chrono::high_resolution_clock::now();
-    for (const auto& usuario : usuarios) {
-        hash.insertar(usuario);
+    int idx = 0;
+    int max_registros = usuarios.size();
+    // Inserción por id
+    for (int n = 0; n <= max_registros; n += 5000) {
+        if (n == 0) {
+            auto fin = std::chrono::high_resolution_clock::now();
+            auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+            grilla.push_back({"HashCerrado", "insercion", "id", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+            continue;
+        }
+        for (; idx < n && idx < max_registros; ++idx) {
+            hash.insertar(usuarios[idx]);
+        }
+        auto fin = std::chrono::high_resolution_clock::now();
+        auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+        grilla.push_back({"HashCerrado", "insercion", "id", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+    }
+    if (idx < max_registros) {
+        for (; idx < max_registros; ++idx) {
+            hash.insertar(usuarios[idx]);
+        }
+        auto fin = std::chrono::high_resolution_clock::now();
+        auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+        grilla.push_back({"HashCerrado", "insercion", "id", max_registros, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+    }
+    // Inserción por nombre
+    HashCerrado hash_nombre(hash.tamano_tabla);
+    idx = 0;
+    auto inicio_nombre = std::chrono::high_resolution_clock::now();
+    for (int n = 0; n <= max_registros; n += 5000) {
+        if (n == 0) {
+            auto fin = std::chrono::high_resolution_clock::now();
+            auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio_nombre);
+            grilla.push_back({"HashCerrado", "insercion", "screenName", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+            continue;
+        }
+        for (; idx < n && idx < max_registros; ++idx) {
+            hash_nombre.insertar(usuarios[idx]);
+        }
+        auto fin = std::chrono::high_resolution_clock::now();
+        auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio_nombre);
+        grilla.push_back({"HashCerrado", "insercion", "screenName", n, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
+    }
+    if (idx < max_registros) {
+        for (; idx < max_registros; ++idx) {
+            hash_nombre.insertar(usuarios[idx]);
+        }
+        auto fin = std::chrono::high_resolution_clock::now();
+        auto duracion_ns = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio_nombre);
+        grilla.push_back({"HashCerrado", "insercion", "screenName", max_registros, (double)duracion_ns.count() / 1e9, duracion_ns.count() / 1000000, duracion_ns.count() / 1000, duracion_ns.count()});
     }
     auto fin = std::chrono::high_resolution_clock::now();
     tiempo_insercion = std::chrono::duration<double>(fin - inicio).count();
-    grilla.push_back({"HashCerrado", "insercion", "id", (int)usuarios.size(), tiempo_insercion, (long long)(tiempo_insercion*1000), (long long)(tiempo_insercion*1000000), (long long)(tiempo_insercion*1000000000)});
 }
 
 // Busca usuario por id en hash abierto

@@ -65,12 +65,16 @@ def graficar_busqueda_bst(df, nombre_limpio, estructura):
 def graficar_insercion_hash(df, nombre_limpio, tipo_hash):
     print(f"Generando gráfico de inserción para Hash {tipo_hash}")
     plt.figure(figsize=(8, 5))
-    plt.plot(df["n_usuarios"], df["tiempo_ms"], marker='o', label=f"Hash {tipo_hash}")
+    colores = {"id": "#1f77b4", "screenName": "#ff7f0e"}  # azul y naranja
+    for clave in df["clave"].unique():
+        subset = df[df["clave"] == clave]
+        color = colores.get(clave, None)
+        plt.plot(subset["n_usuarios"], subset["tiempo_ms"], marker='o', label=clave, color=color)
     plt.title(f"Inserción en Hash {tipo_hash.upper()}")
     plt.xlabel("Cantidad de usuarios")
     plt.ylabel("Tiempo (ms)")
     plt.grid(True, alpha=0.3)
-    plt.legend(loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=1)
+    plt.legend(title="Clave", loc="upper center", bbox_to_anchor=(0.5, -0.15), ncol=2)
     plt.tight_layout()
     path_img = os.path.join(ruta_salida, f"{nombre_limpio}.png")
     plt.savefig(path_img)

@@ -25,7 +25,7 @@ int main() {
     std::filesystem::remove_all("resultados");
     std::filesystem::create_directory("resultados");
 
-    int opcion = 1; 
+    int opcion = 2; 
     if( opcion ==1){
 
         
