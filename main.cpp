@@ -18,7 +18,7 @@
 
 using namespace std;
 
-int LIMITE_USUARIOS = 40000;
+int LIMITE_USUARIOS = 10000;
 
 void flujo_bst() {
     auto inicio_total_insercion = chrono::high_resolution_clock::now();

@@ -10,12 +10,20 @@ set -e
 # Compilar
 make clean && make
 
+# Preparar entorno Python
+if [ ! -x ./setup_entorno_py.sh ]; then
+    chmod +x ./setup_entorno_py.sh
+fi
+./setup_entorno_py.sh
+
 for ((i=1; i<=N; i++)); do
     echo "------ Iteración $i ------"
     ./test
     echo "------ Generando gráficos ------"
-    python3 utilidades/graficos_generar.py
+    source venv/bin/activate
+    python utilidades/graficos_generar.py
+    deactivate
     echo "------ Iteración $i completa ------"
 done
 
-echo "Todas las pruebas y gráficos completados."
+echo "Todas las pruebas y gráficos completadas."

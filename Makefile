@@ -6,7 +6,7 @@ TARGET = test
 all: $(TARGET)
 
 $(TARGET): $(SRC)
-	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC)
+	$(CXX) $(CXXFLAGS) -o $(TARGET) $(SRC) -lstdc++fs
 
 clean:
 	rm -f $(TARGET)

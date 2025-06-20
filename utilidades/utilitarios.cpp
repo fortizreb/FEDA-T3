@@ -14,6 +14,8 @@
 #include <algorithm>
 #include <ctime>
 #include <random>
+#include <filesystem>
+namespace fs = std::filesystem;
 using namespace std;
 
 extern int LIMITE_USUARIOS; //variable global para el límite de usuarios
@@ -190,7 +192,7 @@ Exporta resultados de inserción a un archivo CSV.
 Ahora con variante opcional para el nombre del archivo.
 */
 void exportar_resultados_csv(const std::vector<resultado_insercion>& resultados, const std::string& estructura, const std::string& tipo, const std::string& variante) {
-    std::filesystem::create_directories("resultados");
+    fs::create_directories("resultados");
     time_t ahora = time(nullptr);
     tm* local = localtime(&ahora);
     std::string nombre = tipo + "_" + estructura;
