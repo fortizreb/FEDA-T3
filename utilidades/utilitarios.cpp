@@ -210,3 +210,84 @@ void exportar_resultados_csv(const std::vector<resultado_insercion>& resultados,
     archivo.close();
     std::cout << "Resultados de " << tipo << " (" << estructura << (variante.empty() ? "" : ", " + variante) << ") exportados a '" << ruta << "'" << std::endl;
 }
+
+// Inserta usuarios en hash abierto y mide tiempos
+void insertar_hash_abierto(HashAbierto& hash, const std::vector<Usuario>& usuarios, std::vector<resultado_insercion>& grilla, double& tiempo_insercion) {
+    auto inicio = std::chrono::high_resolution_clock::now();
+    for (const auto& usuario : usuarios) {
+        hash.insertar(usuario);
+    }
+    auto fin = std::chrono::high_resolution_clock::now();
+    tiempo_insercion = std::chrono::duration<double>(fin - inicio).count();
+    grilla.push_back({"HashAbierto", "insercion", "id", (int)usuarios.size(), tiempo_insercion, (long long)(tiempo_insercion*1000), (long long)(tiempo_insercion*1000000), (long long)(tiempo_insercion*1000000000)});
+}
+
+// Inserta usuarios en hash cerrado y mide tiempos
+void insertar_hash_cerrado(HashCerrado& hash, const std::vector<Usuario>& usuarios, std::vector<resultado_insercion>& grilla, double& tiempo_insercion) {
+    auto inicio = std::chrono::high_resolution_clock::now();
+    for (const auto& usuario : usuarios) {
+        hash.insertar(usuario);
+    }
+    auto fin = std::chrono::high_resolution_clock::now();
+    tiempo_insercion = std::chrono::duration<double>(fin - inicio).count();
+    grilla.push_back({"HashCerrado", "insercion", "id", (int)usuarios.size(), tiempo_insercion, (long long)(tiempo_insercion*1000), (long long)(tiempo_insercion*1000000), (long long)(tiempo_insercion*1000000000)});
+}
+
+// Busca usuario por id en hash abierto
+bool buscar_hash_abierto_id(const HashAbierto& hash, long long id) {
+    return const_cast<HashAbierto&>(hash).buscar_por_id(id);
+}
+// Busca usuario por id en hash cerrado
+bool buscar_hash_cerrado_id(const HashCerrado& hash, long long id) {
+    return const_cast<HashCerrado&>(hash).buscar_por_id(id);
+}
+// Busca usuario por nombre en hash abierto
+bool buscar_hash_abierto_nombre(const HashAbierto& hash, const std::string& nombre) {
+    return const_cast<HashAbierto&>(hash).buscar_por_nombre(nombre);
+}
+// Busca usuario por nombre en hash cerrado
+bool buscar_hash_cerrado_nombre(const HashCerrado& hash, const std::string& nombre) {
+    return const_cast<HashCerrado&>(hash).buscar_por_nombre(nombre);
+}
+
+// Exporta resultados de inserción en hash a un CSV
+void exportar_resultados_insercion_hash_csv(const std::vector<resultado_insercion>& grilla, const std::string& tipo_hash) {
+    time_t ahora = time(nullptr);
+    tm* local = localtime(&ahora);
+    char buffer[64];
+    std::string nombre = "insert_hash_" + tipo_hash;
+    strftime(buffer, sizeof(buffer), (nombre + "_%H-%M-%S_(%d-%b).csv").c_str(), local);
+    std::string ruta = "resultados/" + std::string(buffer);
+    std::ofstream archivo(ruta);
+    if (!archivo.is_open()) {
+        std::cout << "No se pudo crear el archivo: " << ruta << std::endl;
+        return;
+    }
+    archivo << "n_usuarios,clave,tiempo_ms\n";
+    for (const auto& r : grilla) {
+        archivo << r.cantidad_nodos << "," << r.objetivo << "," << std::fixed << std::setprecision(1) << (double)r.milisegundos << "\n";
+    }
+    archivo.close();
+    std::cout << "Resultados de inserción hash (" << tipo_hash << ") exportados a '" << ruta << "'" << std::endl;
+}
+
+// Exporta resultados de búsqueda en hash a un CSV
+void exportar_resultados_busqueda_hash_csv(const std::vector<resultado_busqueda>& resultados, const std::string& tipo_hash) {
+    time_t ahora = time(nullptr);
+    tm* local = localtime(&ahora);
+    char buffer[64];
+    std::string nombre = "busqueda_hash_" + tipo_hash;
+    strftime(buffer, sizeof(buffer), (nombre + "_%H-%M-%S_(%d-%b).csv").c_str(), local);
+    std::string ruta = "resultados/" + std::string(buffer);
+    std::ofstream archivo(ruta);
+    if (!archivo.is_open()) {
+        std::cout << "No se pudo crear el archivo: " << ruta << std::endl;
+        return;
+    }
+    archivo << "n_usuarios,clave,tipo,tiempo_ns\n";
+    for (const auto& r : resultados) {
+        archivo << r.cantidad_usuarios << "," << r.clave << "," << r.tipo_busqueda << "," << std::fixed << std::setprecision(1) << r.tiempo_ns << "\n";
+    }
+    archivo.close();
+    std::cout << "Resultados de búsqueda hash (" << tipo_hash << ") exportados a '" << ruta << "'" << std::endl;
+}

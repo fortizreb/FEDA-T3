@@ -61,32 +61,39 @@ int main() {
         // INSERCIÓN Y MEDICIÓN EN HASH ABIERTO Y CERRADO
         cout << "\n********[INSERCIÓN HASH ABIERTO Y CERRADO]********" << endl;
         vector<Usuario> usuarios_validos = leer_usuarios_validos_csv("data.csv");
-        // Instanciar tablas hash
-        size_t tamano_tabla = usuarios_validos.size() * 2;
-        HashAbierto hash_abierto(tamano_tabla);
-        HashCerrado hash_cerrado(tamano_tabla);
+        
+        // Instanciar tablas hash con tamaños ajustados según tipo
+        // Para tabla hash abierta (lista) usamos un tamaño primo mayor a 55.000 para un factor de carga cercano a 0.73
+        size_t tamano_tabla_abierto = 55001;
+        HashAbierto hash_abierto(tamano_tabla_abierto);
+
+        // Para tabla hash cerrada (linear probing): usamos un tamaño primo mayor a 80.000 para mantener un factor de carga cercano a 0.5
+        size_t tamano_tabla_cerrado = 80021;
+        HashCerrado hash_cerrado(tamano_tabla_cerrado);
+
         // Hash Abierto
         vector<resultado_insercion> grilla_ha;
-        auto inicio_ha = chrono::high_resolution_clock::now();
-        for (const auto& usuario : usuarios_validos) {
-            hash_abierto.insertar(usuario);
-        }
-        auto fin_ha = chrono::high_resolution_clock::now();
-        double tiempo_ha = chrono::duration<double>(fin_ha - inicio_ha).count();
-        grilla_ha.push_back({"HashAbierto", "insercion", "id", (int)usuarios_validos.size(), tiempo_ha, (long long)(tiempo_ha*1000), (long long)(tiempo_ha*1000000), (long long)(tiempo_ha*1000000000)});
-        exportar_resultados_csv(grilla_ha, "hash", "insercion", "abierto");
+        double tiempo_ha = 0;
+        insertar_hash_abierto(hash_abierto, usuarios_validos, grilla_ha, tiempo_ha);
+        exportar_resultados_insercion_hash_csv(grilla_ha, "abierto");
         cout << "Tiempo de inserción Hash Abierto: " << tiempo_ha << " segundos" << endl;
+
         // Hash Cerrado
         vector<resultado_insercion> grilla_hc;
-        auto inicio_hc = chrono::high_resolution_clock::now();
-        for (const auto& usuario : usuarios_validos) {
-            hash_cerrado.insertar(usuario);
-        }
-        auto fin_hc = chrono::high_resolution_clock::now();
-        double tiempo_hc = chrono::duration<double>(fin_hc - inicio_hc).count();
-        grilla_hc.push_back({"HashCerrado", "insercion", "id", (int)usuarios_validos.size(), tiempo_hc, (long long)(tiempo_hc*1000), (long long)(tiempo_hc*1000000), (long long)(tiempo_hc*1000000000)});
-        exportar_resultados_csv(grilla_hc, "hash", "insercion", "cerrado");
+        double tiempo_hc = 0;
+        insertar_hash_cerrado(hash_cerrado, usuarios_validos, grilla_hc, tiempo_hc);
+        exportar_resultados_insercion_hash_csv(grilla_hc, "cerrado");
         cout << "Tiempo de inserción Hash Cerrado: " << tiempo_hc << " segundos" << endl;
+        
+        
+        // Búsqueda en Hash Abierto y Cerrado
+        cout << "\n********[INSERCIÓN HASH ABIERTO Y CERRADO]********" << endl;
+        long long id_buscar = usuarios_validos[0].id;
+        string nombre_buscar = usuarios_validos[0].screen_name;
+        cout << "Buscar id en Hash Abierto: " << (buscar_hash_abierto_id(hash_abierto, id_buscar) ? "ENCONTRADO" : "NO ENCONTRADO") << endl;
+        cout << "Buscar id en Hash Cerrado: " << (buscar_hash_cerrado_id(hash_cerrado, id_buscar) ? "ENCONTRADO" : "NO ENCONTRADO") << endl;
+        cout << "Buscar nombre en Hash Abierto: " << (buscar_hash_abierto_nombre(hash_abierto, nombre_buscar) ? "ENCONTRADO" : "NO ENCONTRADO") << endl;
+        cout << "Buscar nombre en Hash Cerrado: " << (buscar_hash_cerrado_nombre(hash_cerrado, nombre_buscar) ? "ENCONTRADO" : "NO ENCONTRADO") << endl;
     }
     return 0;
 }
