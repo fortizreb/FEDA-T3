@@ -35,4 +35,4 @@ struct resultado_busqueda {
     double tiempo_ns;
 };
 
-#endif // USUARIO_H
+#endif 

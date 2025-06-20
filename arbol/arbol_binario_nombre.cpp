@@ -86,6 +86,10 @@ Usuario* arbol_binario_nombre::buscar_usuario_rec(nodo_arbol_nombre* nodo, std::
     return buscar_usuario_rec(nodo->derecho, criterio);
 }
 
+/*
+Esta función también se basa en la de insertar del ejemplo de Víctor, pero aquí usamos enteros en vez de strings.
+*/
+
 void insertar_bst_nombre(arbol_binario_nombre& bst, const string& archivo, std::vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion) {
     auto inicio_lectura = chrono::high_resolution_clock::now();
     ifstream archivo_csv(archivo);

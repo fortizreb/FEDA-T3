@@ -1,2 +1,9 @@
 data.csv
 venv/
+# Ignorar archivos en resultados/ pero mantener carpeta
+resultados/*
+!resultados/.gitkeep
+
+# Ignorar archivos en graficos/ pero mantener carpeta
+graficos/*
+!graficos/.gitkeep
