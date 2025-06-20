@@ -1,0 +1,17 @@
+n_usuarios,clave,tipo,tiempo_ns
+5000,id,exitosa,806.2
+5000,id,fallida,43.3
+5000,screenName,exitosa,2275.4
+5000,screenName,fallida,2705.8
+10000,id,exitosa,644.2
+10000,id,fallida,37.1
+10000,screenName,exitosa,2550.8
+10000,screenName,fallida,2673.3
+20000,id,exitosa,736.2
+20000,id,fallida,38.3
+20000,screenName,exitosa,2954.6
+20000,screenName,fallida,2681.7
+40000,id,exitosa,901.7
+40000,id,fallida,36.7
+40000,screenName,exitosa,3202.5
+40000,screenName,fallida,2685.0

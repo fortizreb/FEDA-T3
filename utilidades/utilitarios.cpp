@@ -327,21 +327,102 @@ void insertar_hash_cerrado(HashCerrado& hash, const std::vector<Usuario>& usuari
     tiempo_insercion = std::chrono::duration<double>(fin - inicio).count();
 }
 
-// Busca usuario por id en hash abierto
-bool buscar_hash_abierto_id(const HashAbierto& hash, long long id) {
-    return const_cast<HashAbierto&>(hash).buscar_por_id(id);
-}
-// Busca usuario por id en hash cerrado
-bool buscar_hash_cerrado_id(const HashCerrado& hash, long long id) {
-    return const_cast<HashCerrado&>(hash).buscar_por_id(id);
-}
-// Busca usuario por nombre en hash abierto
-bool buscar_hash_abierto_nombre(const HashAbierto& hash, const std::string& nombre) {
-    return const_cast<HashAbierto&>(hash).buscar_por_nombre(nombre);
-}
-// Busca usuario por nombre en hash cerrado
-bool buscar_hash_cerrado_nombre(const HashCerrado& hash, const std::string& nombre) {
-    return const_cast<HashCerrado&>(hash).buscar_por_nombre(nombre);
+// Realiza pruebas de búsqueda en hash (abierto o cerrado), por id y por nombre, y exporta resultados a CSV
+void busqueda_hash(const std::string& tipo_hash, const std::vector<Usuario>& usuarios_validos) {
+    std::vector<int> tamanos = {5000, 10000, 20000, 40000};
+    std::vector<resultado_busqueda> resultados;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    int N_BUSQUEDAS = 100;
+    if (tipo_hash == "abierto") {
+        for (int n : tamanos) {
+            if ((int)usuarios_validos.size() < n) break;
+            HashAbierto hash(n*2+1); // tamaño arbitrario suficientemente grande
+            for (int i = 0; i < n; ++i) hash.insertar(usuarios_validos[i]);
+            // Búsqueda por id
+            std::uniform_int_distribution<> dis(0, n-1);
+            std::vector<long long> ids;
+            for (int i = 0; i < N_BUSQUEDAS; ++i) ids.push_back(usuarios_validos[dis(gen)].id);
+            volatile bool bandera_resultado = false;
+            auto inicio = std::chrono::high_resolution_clock::now();
+            for (auto id : ids) bandera_resultado |= hash.buscar_por_id(id);
+            auto fin = std::chrono::high_resolution_clock::now();
+            auto duracion = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+            double tiempo_ns = static_cast<double>(duracion.count()) / N_BUSQUEDAS;
+            resultados.push_back({n, "id", "exitosa", tiempo_ns});
+            // Fallida
+            bandera_resultado = false;
+            inicio = std::chrono::high_resolution_clock::now();
+            for (int i = 0; i < N_BUSQUEDAS; ++i) bandera_resultado |= hash.buscar_por_id(-1 - i);
+            fin = std::chrono::high_resolution_clock::now();
+            duracion = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+            tiempo_ns = static_cast<double>(duracion.count()) / N_BUSQUEDAS;
+            resultados.push_back({n, "id", "fallida", tiempo_ns});
+            // Búsqueda por nombre
+            std::vector<std::string> nombres;
+            for (int i = 0; i < N_BUSQUEDAS; ++i) nombres.push_back(usuarios_validos[dis(gen)].screen_name);
+            bandera_resultado = false;
+            inicio = std::chrono::high_resolution_clock::now();
+            for (auto& nombre : nombres) bandera_resultado |= hash.buscar_por_nombre(nombre);
+            fin = std::chrono::high_resolution_clock::now();
+            duracion = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+            tiempo_ns = static_cast<double>(duracion.count()) / N_BUSQUEDAS;
+            resultados.push_back({n, "screenName", "exitosa", tiempo_ns});
+            // Fallida
+            bandera_resultado = false;
+            inicio = std::chrono::high_resolution_clock::now();
+            for (int i = 0; i < N_BUSQUEDAS; ++i) bandera_resultado |= hash.buscar_por_nombre("inexistente_user_" + std::to_string(i));
+            fin = std::chrono::high_resolution_clock::now();
+            duracion = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+            tiempo_ns = static_cast<double>(duracion.count()) / N_BUSQUEDAS;
+            resultados.push_back({n, "screenName", "fallida", tiempo_ns});
+        }
+        exportar_resultados_busqueda_hash_csv(resultados, "abierto");
+    } else if (tipo_hash == "cerrado") {
+        for (int n : tamanos) {
+            if ((int)usuarios_validos.size() < n) break;
+            HashCerrado hash(n*2+1);
+            for (int i = 0; i < n; ++i) hash.insertar(usuarios_validos[i]);
+            // Búsqueda por id
+            std::uniform_int_distribution<> dis(0, n-1);
+            std::vector<long long> ids;
+            for (int i = 0; i < N_BUSQUEDAS; ++i) ids.push_back(usuarios_validos[dis(gen)].id);
+            volatile bool bandera_resultado = false;
+            auto inicio = std::chrono::high_resolution_clock::now();
+            for (auto id : ids) bandera_resultado |= hash.buscar_por_id(id);
+            auto fin = std::chrono::high_resolution_clock::now();
+            auto duracion = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+            double tiempo_ns = static_cast<double>(duracion.count()) / N_BUSQUEDAS;
+            resultados.push_back({n, "id", "exitosa", tiempo_ns});
+            // Fallida
+            bandera_resultado = false;
+            inicio = std::chrono::high_resolution_clock::now();
+            for (int i = 0; i < N_BUSQUEDAS; ++i) bandera_resultado |= hash.buscar_por_id(-1 - i);
+            fin = std::chrono::high_resolution_clock::now();
+            duracion = std::chrono::duration_cast<std::chrono::nanoseconds>(fin - inicio);
+            tiempo_ns = static_cast<double>(duracion.count()) / N_BUSQUEDAS;
+            resultados.push_back({n, "id", "fallida", tiempo_ns});
+            // Búsqueda por nombre
+            std::vector<std::string> nombres;
+            for (int i = 0; i < N_BUSQUEDAS; ++i) nombres.push_back(usuarios_validos[dis(gen)].screen_name);
+            bandera_resultado = false;
+            inicio = std::chrono::high_resolution_clock::now();
+            for (auto& nombre : nombres) bandera_resultado |= hash.buscar_por_nombre(nombre);
+            fin = chrono::high_resolution_clock::now();
+            duracion = chrono::duration_cast<chrono::nanoseconds>(fin - inicio);
+            tiempo_ns = static_cast<double>(duracion.count()) / N_BUSQUEDAS;
+            resultados.push_back({n, "screenName", "exitosa", tiempo_ns});
+            // Fallida
+            bandera_resultado = false;
+            inicio = std::chrono::high_resolution_clock::now();
+            for (int i = 0; i < N_BUSQUEDAS; ++i) bandera_resultado |= hash.buscar_por_nombre("inexistente_user_" + std::to_string(i));
+            fin = std::chrono::high_resolution_clock::now();
+            duracion = chrono::duration_cast<chrono::nanoseconds>(fin - inicio);
+            tiempo_ns = static_cast<double>(duracion.count()) / N_BUSQUEDAS;
+            resultados.push_back({n, "screenName", "fallida", tiempo_ns});
+        }
+        exportar_resultados_busqueda_hash_csv(resultados, "cerrado");
+    }
 }
 
 // Exporta resultados de inserción en hash a un CSV

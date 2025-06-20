@@ -19,6 +19,9 @@ void exportar_resultados_csv(const std::vector<resultado_insercion>& resultados,
 // Hace búsquedas en ambos árboles (por id y por nombre) y guarda los resultados
 void busqueda_bst(const arbol_binario_id& bst_id, const arbol_binario_nombre& bst_nombre, const vector<Usuario>& usuarios_validos);
 
+// Realiza pruebas de búsqueda en hash (abierto o cerrado), por id y por nombre, y exporta resultados a CSV
+void busqueda_hash(const std::string& tipo_hash, const std::vector<Usuario>& usuarios_validos);
+
 vector<Usuario> leer_usuarios_validos_csv(const string& archivo);// lee usuarios válidos desde un archivo CSV y los retorna en un vector
 // Inserta usuarios en el árbol por ID, mide tiempos y guarda resultados
 void insertar_bst_id(arbol_binario_id& arbol, const string& archivo, vector<resultado_insercion>& grilla, double& tiempo_lectura, double& tiempo_insercion);

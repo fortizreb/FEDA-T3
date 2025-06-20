@@ -1,9 +1,9 @@
 #!/bin/bash
 # Script para compilar, ejecutar pruebas y generar gráficos
 # Uso: ./ejecutar_pruebas.sh [N]
-# N = cantidad de iteraciones (por defecto 5)
+# N = cantidad de iteraciones (por defecto 1)
 
-N=${1:-5}
+N=${1:-1}
 
 set -e
 
